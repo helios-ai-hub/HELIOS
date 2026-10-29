@@ -1,0 +1,981 @@
+<!doctype html>
+<html lang="it">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>LIMET — Fattibilità O1: Claude Code Agent + Workflow</title>
+<style>
+  :root {
+    --bg: #0e1116; --bg2: #141923; --card: #171d29; --border: #262f40;
+    --text: #e6ebf2; --muted: #8b96a8; --accent: #f59e0b; --accent2: #d97706;
+    --ok: #22c55e; --warn: #f59e0b; --err: #ef4444; --info: #38bdf8; --violet: #a78bfa;
+    --mono: "Cascadia Code", "JetBrains Mono", Consolas, monospace;
+  }
+  * { box-sizing: border-box; }
+  html { scroll-behavior: smooth; }
+  body {
+    margin: 0; background: radial-gradient(1200px 600px at 50% -10%, #1a2230 0%, var(--bg) 55%);
+    color: var(--text); font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    min-height: 100vh; font-size: 14.5px; line-height: 1.6;
+  }
+  .top {
+    display: flex; align-items: center; gap: 12px; padding: 14px 24px;
+    border-bottom: 1px solid var(--border); background: rgba(14,17,22,.8);
+    position: sticky; top: 0; z-index: 10; backdrop-filter: blur(6px);
+  }
+  .top .logo { font-size: 22px; }
+  .top h1 { font-size: 16px; margin: 0; font-weight: 700; }
+  .top .sub { color: var(--muted); font-size: 12.5px; margin-left: auto; }
+  .layout { display: flex; gap: 22px; padding: 20px 24px; max-width: 1280px; margin: 0 auto; align-items: flex-start; }
+  nav.side { width: 260px; flex-shrink: 0; display: flex; flex-direction: column; gap: 5px; position: sticky; top: 66px; max-height: calc(100vh - 80px); overflow-y: auto; }
+  nav.side button {
+    text-align: left; padding: 9px 12px; border: 1px solid var(--border); border-radius: 9px;
+    background: var(--bg2); color: var(--muted); cursor: pointer; font-size: 13px; transition: all .15s;
+    display: flex; align-items: center; gap: 8px; font-family: inherit;
+  }
+  nav.side button:hover { border-color: #3a4a63; color: var(--text); }
+  nav.side button.on { border-color: var(--accent); color: var(--text); background: rgba(245,158,11,.10); }
+  nav.side button .n { font-size: 11px; color: var(--muted); opacity: .8; font-family: var(--mono); min-width: 20px; }
+  main { flex: 1; min-width: 0; }
+  section.page { display: none; }
+  section.page.on { display: block; animation: fade .2s ease; }
+  @keyframes fade { from { opacity: 0; transform: translateY(4px);} to { opacity: 1; transform: none;} }
+  h2 { font-size: 22px; margin: 0 0 6px; }
+  h3 { font-size: 16.5px; margin: 26px 0 8px; color: var(--accent); }
+  h4 { font-size: 14.5px; margin: 18px 0 6px; color: var(--text); }
+  .lead { color: var(--muted); font-size: 14px; margin: 0 0 18px; max-width: 820px; }
+  p { margin: 8px 0; }
+  ul, ol { margin: 6px 0 10px; padding-left: 22px; }
+  li { margin: 3px 0; }
+  code { background: rgba(0,0,0,.35); padding: 1px 5px; border-radius: 5px; font-family: var(--mono); font-size: 12.3px; }
+  pre { background: #0b0e13; border: 1px solid var(--border); border-radius: 9px; font-family: var(--mono); font-size: 12.3px; padding: 12px 14px; overflow-x: auto; color: #c7d2e0; line-height: 1.5; margin: 10px 0; }
+  pre code { background: none; padding: 0; }
+  .card { border: 1px solid var(--border); border-radius: 12px; background: var(--card); padding: 16px 18px; margin: 12px 0; }
+  .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  .grid3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; }
+  .kpi { border: 1px solid var(--border); border-radius: 10px; padding: 12px 14px; background: var(--bg2); }
+  .kpi .k { font-size: 11.5px; color: var(--muted); text-transform: uppercase; letter-spacing: .04em; }
+  .kpi .v { font-size: 15px; font-weight: 700; margin-top: 3px; }
+  table { width: 100%; border-collapse: collapse; margin: 10px 0 14px; font-size: 13.2px; }
+  th, td { border: 1px solid var(--border); padding: 7px 9px; text-align: left; vertical-align: top; }
+  th { background: var(--bg2); color: var(--text); font-weight: 600; }
+  td code { white-space: nowrap; }
+  .tag { display: inline-block; font-size: 10.5px; font-weight: 700; border-radius: 99px; padding: 1px 8px; vertical-align: middle; white-space: nowrap; }
+  .tag.fatto { color: var(--ok); border: 1px solid rgba(34,197,94,.5); }
+  .tag.ipotesi { color: var(--warn); border: 1px solid rgba(245,158,11,.5); }
+  .tag.manca { color: var(--err); border: 1px solid rgba(239,68,68,.5); }
+  .tag.verif { color: var(--info); border: 1px solid rgba(56,189,248,.5); }
+  .tag.claude { color: #fbbf24; border: 1px solid rgba(251,191,36,.5); }
+  .tag.copilot { color: #7dd3fc; border: 1px solid rgba(56,189,248,.5); }
+  .tag.runner { color: #c4b5fd; border: 1px solid rgba(167,139,250,.5); }
+  .callout { border-left: 3px solid var(--accent); background: rgba(245,158,11,.07); padding: 10px 14px; border-radius: 0 10px 10px 0; margin: 12px 0; }
+  .callout.err { border-color: var(--err); background: rgba(239,68,68,.07); }
+  .callout.ok { border-color: var(--ok); background: rgba(34,197,94,.07); }
+  .callout.info { border-color: var(--info); background: rgba(56,189,248,.07); }
+  .legend { display: flex; gap: 8px; flex-wrap: wrap; margin: 8px 0 14px; font-size: 12.5px; color: var(--muted); align-items: center; }
+  details { border: 1px solid var(--border); border-radius: 10px; padding: 8px 14px; margin: 8px 0; background: var(--bg2); }
+  summary { cursor: pointer; font-weight: 600; }
+  svg.diag { width: 100%; height: auto; display: block; margin: 10px 0; }
+  svg.diag text { font-family: -apple-system, "Segoe UI", Roboto, sans-serif; font-size: 12px; fill: var(--text); }
+  svg.diag .box { fill: var(--bg2); stroke: var(--border); stroke-width: 1.2; rx: 8; }
+  svg.diag .box.acc { stroke: var(--accent); }
+  svg.diag .box.ok { stroke: var(--ok); }
+  svg.diag .box.vio { stroke: var(--violet); }
+  svg.diag .box.inf { stroke: var(--info); }
+  svg.diag .arr { stroke: var(--muted); stroke-width: 1.4; fill: none; marker-end: url(#ah); }
+  svg.diag .arr.acc { stroke: var(--accent); }
+  svg.diag .lbl { fill: var(--muted); font-size: 10.5px; }
+  svg.diag .t { font-weight: 700; }
+  .navb { display: flex; gap: 10px; margin-top: 22px; }
+  .navb button { flex: 1; padding: 11px; border-radius: 10px; cursor: pointer; font-size: 14px; font-weight: 600; border: 1px solid var(--border); background: var(--bg2); color: var(--text); font-family: inherit; }
+  .navb button:disabled { opacity: .35; cursor: not-allowed; }
+  .navb button.primary { background: linear-gradient(180deg, var(--accent), var(--accent2)); color: #1a1204; border: none; }
+  .toc { font-size: 13px; color: var(--muted); }
+  .toc a { color: var(--info); text-decoration: none; }
+  .small { font-size: 12.5px; color: var(--muted); }
+  .verdict { display: flex; gap: 14px; align-items: center; border: 1px solid rgba(245,158,11,.5); border-radius: 12px; padding: 14px 18px; background: rgba(245,158,11,.08); }
+  .verdict .big { font-size: 18px; font-weight: 800; color: var(--accent); }
+  @media (max-width: 860px) {
+    .layout { flex-direction: column; padding: 14px 16px; }
+    nav.side { width: 100%; flex-direction: row; flex-wrap: wrap; position: static; max-height: none; }
+    nav.side button { flex: 1 1 45%; }
+    .grid2, .grid3 { grid-template-columns: 1fr; }
+    .top .sub { display: none; }
+  }
+  @media print { nav.side, .navb, .top .sub { display: none; } section.page { display: block !important; page-break-after: always; } }
+</style>
+</head>
+<body>
+<div class="top">
+  <div class="logo">🟧</div>
+  <h1>LIMET — Studio di fattibilità: ecosistema multi-agente con sola Claude Code (Agent + Workflow)</h1>
+  <div class="sub">Versione 2.0 · 2026-10-27 · solo LIMET + funzionalità native di Claude Code · scenario «Gestione biblioteca»</div>
+</div>
+
+<div class="layout">
+  <nav class="side" id="side"></nav>
+  <main id="main">
+
+<!-- ======================================================================= -->
+<section class="page" data-id="0" data-title="Sintesi e vincoli">
+<h2>Sintesi esecutiva</h2>
+<p class="lead">Studio di fattibilità <b>autonomo</b> di un ecosistema di agenti che sviluppa, testa, compila, integra e valida software usando <b>esclusivamente</b> due cose: il metodo <b>LIMET</b> (manuale, template, blocco <code>AGENTS.md</code>, cartella <code>limet/</code>, strumenti di contesto dell'Appendice A: CEREBRO/Qdrant/Ollama e Graphify) e le <b>funzionalità native di Claude Code</b> (una sessione orchestratrice con tool <code>Workflow</code> e <code>Agent</code>, agenti in <code>.claude/agents/</code>, workflow in <code>.claude/workflows/</code>, skill in <code>.claude/skills/</code>, permessi e hook in <code>.claude/settings.json</code>, <code>AskUserQuestion</code>, worktree, MCP, Claude in Chrome). Nessun repository esterno, nessun framework di agenti terzo, nessun altro strumento AI.</p>
+
+<div class="verdict"><div class="big">Verdetto: FATTIBILE con modifiche documentali preliminari a LIMET</div><div class="small">Costo API stimato per lo scenario «Gestione biblioteca»: 20–45 USD; tempo di parete 6–10 ore con 3 agenti + 1 build; disco aggiuntivo 4–9 GB su 60,8 GB liberi; picco RAM ~8–9 GB su 15,7.</div></div>
+
+<h3>Cosa fa l'ecosistema, in breve</h3>
+<p>L'ecosistema serve per i tre lavori che LIMET già descrive: <b>sviluppare un progetto da zero</b> (Appendice B.2), <b>aggiungere una nuova feature</b> (B.4) e <b>gestire e correggere un bug</b> (B.3). In tutti e tre i casi il punto di partenza è lo stesso: tu scrivi e approvi i documenti LIMET con il consueto prompt (vedi tabella sotto). Poi apri una sessione Claude Code e dici «esegui». Da quel momento la sessione <b>innesca una catena di agenti</b> che, partendo <i>solo</i> da quei documenti e dal codice, realizza i task, scrive i test e li fa eseguire da uno script, integra, e infine <b>un agente validatore prende i report dei test e li confronta uno per uno con i requisiti</b> scritti nella SPEC, dichiarando per ciascuno conforme / non conforme / non determinabile con le prove allegate. Tu ricevi il report di conformità e il report finale. Nessun agente scrive documenti LIMET: li legge. Se a un agente manca un'informazione, si ferma e chiede a te; gli altri continuano.</p>
+<table>
+<tr><th>Caso d'uso</th><th>Documenti LIMET che prepari tu (consueto prompt)</th><th>Cosa fa l'ecosistema</th><th>Riferimento LIMET</th></tr>
+<tr><td><b>Progetto da zero</b></td><td>PLAN (scheletro, decisioni di base), SPEC delle prime capability, TASK_LIST (struttura repo, build, primi endpoint…), TEST_PLAN, E2E_VERIFICATION; convenzioni e invarianti iniziali in <code>docs-limet/</code></td><td>Realizza i task per onde a partire da un repository vuoto o scaffold (il primo task è sempre un <code>contract</code>: pom/compose/schema/OpenAPI); poi come per una feature</td><td>App. B.2</td></tr>
+<tr><td><b>Nuova feature</b></td><td>PLAN oppure CHANGE_PROPOSAL + SPEC (+ DESIGN), TASK_LIST, TEST_PLAN, E2E_VERIFICATION</td><td>Esegue i task della TASK_LIST, test dal TEST_PLAN, e2e dall'E2E_VERIFICATION, validazione sui requisiti della SPEC</td><td>App. B.4</td></tr>
+<tr><td><b>Bug fix</b></td><td>BUG_REPORT (comportamento osservato/atteso, passi, causa radice se nota), TASK_LIST minimale, TEST_PLAN con il test di regressione «che deve fallire prima del fix»</td><td>Il tester scrive prima il test di regressione; il runner lo esegue e deve fallire (prova che riproduce il bug); il developer applica il fix minimale; il runner lo riesegue e deve passare; regressione sui file toccati; validazione contro il comportamento atteso del BUG_REPORT</td><td>App. B.3</td></tr>
+</table>
+<svg class="diag" viewBox="0 0 1000 150">
+  <defs><marker id="a0" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#8b96a8"/></marker></defs>
+  <rect class="box ok" x="10" y="40" width="130" height="60"/><text x="75" y="63" text-anchor="middle" class="t">Tu + LIMET</text><text x="75" y="81" text-anchor="middle" class="lbl">PLAN SPEC TASK_LIST TEST_PLAN</text>
+  <rect class="box acc" x="170" y="40" width="130" height="60"/><text x="235" y="63" text-anchor="middle" class="t">Orchestratore</text><text x="235" y="81" text-anchor="middle" class="lbl">sessione Claude Code</text>
+  <rect class="box inf" x="330" y="40" width="110" height="60"/><text x="385" y="63" text-anchor="middle" class="t">analyst</text><text x="385" y="81" text-anchor="middle" class="lbl">grafo dei task</text>
+  <rect class="box inf" x="470" y="10" width="110" height="50"/><text x="525" y="30" text-anchor="middle" class="t">developer ×N</text><text x="525" y="47" text-anchor="middle" class="lbl">codice</text>
+  <rect class="box inf" x="470" y="80" width="110" height="50"/><text x="525" y="100" text-anchor="middle" class="t">tester ×M</text><text x="525" y="117" text-anchor="middle" class="lbl">test dal TEST_PLAN</text>
+  <rect class="box vio" x="610" y="40" width="120" height="60"/><text x="670" y="58" text-anchor="middle" class="t">integrator</text><text x="670" y="74" text-anchor="middle" class="lbl">+ runner (script)</text><text x="670" y="90" text-anchor="middle" class="lbl">merge · build · test</text>
+  <rect class="box inf" x="760" y="40" width="110" height="60"/><text x="815" y="58" text-anchor="middle" class="t">reviewer</text><text x="815" y="74" text-anchor="middle" class="lbl">test-reader</text><text x="815" y="90" text-anchor="middle" class="lbl">validator</text>
+  <rect class="box ok" x="900" y="40" width="90" height="60"/><text x="945" y="63" text-anchor="middle" class="t">Report</text><text x="945" y="81" text-anchor="middle" class="lbl">→ tu chiudi con LIMET</text>
+  <path class="arr" d="M140,70 L170,70" style="marker-end:url(#a0)"/><path class="arr" d="M300,70 L330,70" style="marker-end:url(#a0)"/><path class="arr" d="M440,60 L470,35" style="marker-end:url(#a0)"/><path class="arr" d="M440,80 L470,105" style="marker-end:url(#a0)"/><path class="arr" d="M580,35 L610,60" style="marker-end:url(#a0)"/><path class="arr" d="M580,105 L610,80" style="marker-end:url(#a0)"/><path class="arr" d="M730,70 L760,70" style="marker-end:url(#a0)"/><path class="arr" d="M870,70 L900,70" style="marker-end:url(#a0)"/>
+  <path class="arr acc" d="M235,100 L235,135 L75,135 L75,100" style="marker-end:url(#a0)"/><text x="155" y="148" text-anchor="middle" class="lbl">domande → Supervisore (tu)</text>
+</svg>
+<table>
+<tr><th>Chi</th><th>Cos'è</th><th>Cosa fa, partendo dai documenti LIMET</th><th>Cosa non fa mai</th></tr>
+<tr><td><b>Tu (Supervisore)</b></td><td>La persona in sessione</td><td>Scrivi e approvi i documenti LIMET prima; rispondi alle domande; confermi il grafo di esecuzione; leggi il campione a rischio; fai il merge; chiudi la change con LIMET</td><td>Leggere tutto il codice prodotto</td></tr>
+<tr><td><b>Orchestratore</b></td><td>La sessione Claude Code che hai aperto, guidata da uno script (workflow)</td><td>Legge le regole LIMET da <code>CLAUDE.md</code> (che con la riga <code>@AGENTS.md</code> importa il blocco scritto da <code>limet.ps1</code>: meccanismo LIMET §9.1, un solo file di regole per tutti gli strumenti); lancia gli agenti nell'ordine giusto e in parallelo; tiene lo stato in <code>ecosystem/state.json</code>; ti pone le domande; invoca lo script di build/test; decide quando ri-tentare o fermarsi</td><td>Scrivere codice; modificare documenti LIMET; fare merge sul ramo principale; rispondere al posto tuo</td></tr>
+<tr><td><b>analyst</b></td><td>Agente di analisi (Opus)</td><td>Legge PLAN, SPEC, TASK_LIST, TEST_PLAN; per ogni task della TASK_LIST stima i file coinvolti con Graphify e il contesto con CEREBRO; collega task ↔ requisiti ↔ test; propone split per i task troppo grandi; produce il grafo di esecuzione</td><td>Scrivere PLAN/SPEC; inventare requisiti; procedere se i documenti sono incompleti</td></tr>
+<tr><td><b>developer ×N</b></td><td>Agenti sviluppatori (Sonnet), uno per task, ciascuno in una copia separata del progetto</td><td>Implementano il task come descritto in TASK_LIST e SPEC, rispettando convenzioni e invarianti; fanno commit sul ramo del task; consegnano l'elenco dei file toccati nel formato del «Registro modifiche»</td><td>Eseguire build/test; toccare file fuori perimetro; fare push; assumere</td></tr>
+<tr><td><b>tester ×M</b></td><td>Agenti di test (Sonnet), in parallelo ai developer, in copie separate</td><td>Traducono in codice i casi del TEST_PLAN (unit, integrazione), aggiungono i casi limite richiesti, eseguono l'autorevisione §5.1 e la riportano; scrivono contro la SPEC, senza vedere il codice del developer</td><td>Eseguire i test; adattare i test all'implementazione; scrivere il TEST_PLAN</td></tr>
+<tr><td><b>integrator</b></td><td>Agente di integrazione (Sonnet)</td><td>Unisce i rami di codice e test di un task sul ramo di integrazione; risolve i conflitti banali, segnala gli altri</td><td>Risolvere conflitti semantici; fare merge sul ramo principale</td></tr>
+<tr><td><b>runner</b></td><td><b>Non è un agente</b>: uno script (skill Claude Code) che l'orchestratore lancia</td><td>Compila, esegue i test selezionati, la regressione, la copertura, il mutation testing, l'analisi statica e gli e2e; salva i log su disco; restituisce un riepilogo JSON per versione esatta del codice</td><td>Interpretare; riassumere; eseguire su codice non committato</td></tr>
+<tr><td><b>test-reader</b></td><td>Agente lettore di esiti (Haiku, economico)</td><td>Legge il riepilogo del runner e le righe di log indicate; classifica ogni fallimento: difetto del codice, del test, ambiguità del contratto, problema di ambiente; prepara gli estratti reali per il futuro TEST_EXECUTION</td><td>Riassumere a memoria; dichiarare passato un test non eseguito</td></tr>
+<tr><td><b>reviewer</b></td><td>Agente revisore (Opus, modello diverso dal developer)</td><td>Legge SPEC e diff; applica una checklist (conformità, convenzioni, invarianti, sicurezza, complessità); produce findings con severità, file e riga</td><td>Correggere il codice; approvare «a sensazione»</td></tr>
+<tr><td><b>validator</b></td><td>Agente di validazione requisiti (Opus)</td><td><b>Prende i report</b> prodotti dal runner e dai lettori (esiti dei test, e2e, copertura, mutation) e <b>li confronta con i requisiti</b> della SPEC (o con il comportamento atteso del BUG_REPORT): per ogni requisito cerca le prove (quali test, in quale run, su quale commit), individua requisiti senza test, test senza requisito, contraddizioni fra scenari ed esiti; emette conforme / non conforme / non determinabile; compila il report di conformità</td><td>Dichiarare conforme senza prove</td></tr>
+<tr><td><b>e2e-designer / e2e-reader</b></td><td>Agenti per i test da browser (Sonnet / Haiku)</td><td>Il designer esplora l'app con Claude in Chrome seguendo i passi dell'E2E_VERIFICATION e li trasforma in script Playwright; il runner li esegue; il reader classifica gli esiti con trace e screenshot</td><td>Eseguire gli e2e in proprio; inventare passi non previsti dall'E2E_VERIFICATION</td></tr>
+</table>
+<p class="small">Alla fine l'ecosistema consegna <code>ecosystem/REPORT_FINALE.md</code> e <code>REPORT_CONFORMITA.md</code>; tu chiudi la change con il consueto prompt LIMET (TEST_EXECUTION, esito implementazione, archivio) usando quei report come fonte.</p>
+
+<div class="legend">Marcatori: <span class="tag fatto">FATTO OSSERVATO</span> <span class="tag ipotesi">IPOTESI</span> <span class="tag manca">NON VERIFICATO / DA FARE</span> <span class="tag verif">DA VERIFICARE</span> <span class="tag claude">Funzionalità Claude Code</span> <span class="tag runner">Skill runner (script, non LLM)</span></div>
+
+<p class="small">Lettura consigliata: prima il capitolo <b>G · Guida semplice con esempi</b> (come funziona, passo per passo, con l'esempio dei prestiti), poi i capitoli tecnici 1–7, e il glossario Z per i termini.</p>
+
+<h3>Vincoli di progetto</h3>
+<ul>
+  <li><b>Solo LIMET</b>: il ciclo di vita (§3 del manuale), i template (PLAN, SPEC, TASK_LIST, TASK, TEST_PLAN, TEST_EXECUTION, E2E_VERIFICATION, BUG_REPORT, ARCHIVE_ENTRY), gli stati (§4), il requisito vincolante di test con autorevisione (§5), le regole del blocco <code>AGENTS.md</code> scritto da <code>limet.ps1</code>, gli strumenti di contesto dell'Appendice A.</li>
+  <li><b>Solo Claude Code</b>: orchestrazione, agenti, isolamento, permessi, interazione con l'umano, esecuzione di script. Ogni componente dell'ecosistema è un file di configurazione o definizione di Claude Code dentro il progetto target.</li>
+  <li><b>I documenti LIMET li scrive l'utente, non gli agenti</b>: PLAN, SPEC, TASK_LIST, TEST_PLAN, E2E_VERIFICATION (e BUG_REPORT per i fix) vengono prodotti prima, con il consueto prompt LIMET in una normale sessione, e approvati. L'ecosistema li legge come input e <b>non crea né modifica documenti LIMET</b>: scrive solo i propri artefatti nella sottocartella <code>limet/changes/NNNN/ecosystem/</code> (stato, eventi, brief, risultati, run, report). La chiusura LIMET (TEST_EXECUTION con esiti reali, Esito implementazione, ARCHIVE_ENTRY) la fa l'utente con il consueto prompt, usando il report dell'ecosistema come fonte.</li>
+  <li><b>Gli agenti sono esterni a LIMET</b>: LIMET resta repo di metodo; le definizioni degli agenti stanno in <code>.claude/</code> del progetto target (o in un plugin Claude Code riusabile), installate accanto a <code>limet/</code>.</li>
+  <li><b>Supervisore umano</b>: ogni agente che manca di informazioni si ferma e chiede; chi può proseguire prosegue; il Supervisore è la persona in sessione, raggiunta con <code>AskUserQuestion</code>.</li>
+  <li><b>Affidabilità a scala</b>: l'umano non legge tutto il codice; legge evidenze meccaniche e un campione a rischio.</li>
+</ul>
+
+<h3>Fatti ambientali verificati <span class="tag fatto">FATTO OSSERVATO</span></h3>
+<table>
+<tr><th>Elemento</th><th>Osservato</th></tr>
+<tr><td>Claude Code</td><td>2.1.311. In sessione: tool <code>Agent</code> (sub-agenti da <code>.claude/agents/*.md</code>, <code>isolation: "worktree"</code>, <code>model</code> per ruolo), tool <code>Workflow</code> (script JS con <code>agent()/parallel()/pipeline()/phase()</code>, schema sui risultati, workflow salvati in <code>.claude/workflows/</code>, <code>resumeFromRunId</code>), <code>AskUserQuestion</code>, skill (<code>.claude/skills/</code>, con script allegati), hook (<code>SessionStart</code>, <code>UserPromptSubmit</code>, <code>PreToolUse</code>…), permessi (<code>allow/deny</code>, <code>--permission-mode</code>), MCP (<code>.mcp.json</code>), Claude in Chrome (skill presente), <code>--max-budget-usd</code>, <code>--json-schema</code>, <code>-w</code>, <code>--bg</code>, <code>claude agents/attach/logs</code>.</td></tr>
+<tr><td>LIMET</td><td>Repo <code>C:\Progetti\VSC\LIMET</code>: manuale IT/EN, 18 template, <code>limet.ps1/.sh</code> (init/update: <code>limet/</code>, blocco <code>AGENTS.md</code>, <code>@AGENTS.md</code> in <code>CLAUDE.md</code>), <code>limet-index</code> (CEREBRO + Graphify), launcher. Regole vincolanti: piano prima del codice; domande contestuali; <b>l'agente non esegue mai build/test</b>; approvazione umana del piano; nessun commit/push senza autorizzazione; test obbligatori con autorevisione §5.1; registro modifiche; re-index all'utente.</td></tr>
+<tr><td>CEREBRO</td><td>Installato in <code>C:\software\cerebro</code> (<code>.venv</code>, <code>query_qdrant.py</code>, <code>limet_mcp.py</code> → tool MCP <code>limet_search</code>, <code>limet_rag.py</code> → hook <code>UserPromptSubmit</code>). Progetti registrati: csi_cosmo, mudeopensrvet, mudeopenbtcet. <b><code>limet</code> non registrato, <code>CRB_limet</code> assente</b>. Il puntatore <code>C:\Progetti\CEREBRO</code> in <code>CLAUDE.md</code> è errato.</td></tr>
+<tr><td>Qdrant / Ollama / Graphify</td><td>Attivi (:6333, :11434, <code>nomic-embed-text</code>); Graphify 0.9.48 in PATH.</td></tr>
+<tr><td>Macchina</td><td>Windows 11, i7-1185G7 (4 core / 8 thread), 15,7 GB RAM; disco C: 445 GB usati, <b>60,8 GB liberi</b>; Docker 29 (8,09 GB immagini, 1,86 GB recuperabili); Node 24; git 2.51; Maven 3.8.4 + JDK 11 in PATH (sdkman). Playwright non installato; Chrome non in <code>Program Files</code>.</td></tr>
+</table>
+</section>
+
+<!-- ======================================================================= -->
+<section class="page" data-id="G" data-title="Guida semplice con esempi">
+<h2>G · Come funziona, passo per passo, con esempi</h2>
+<p class="lead">Questa sezione spiega in parole semplici cosa succede davvero quando si usa l'ecosistema, seguendo l'esempio della biblioteca. Ogni passo mostra: chi agisce, cosa scrive, cosa si vede sullo schermo.</p>
+
+<h3>G.1 Le tre cose da capire prima di tutto</h3>
+<div class="grid3">
+  <div class="card"><b>1. C'è una sola «testa»: la sessione Claude Code.</b><br>Tu apri Claude Code nella cartella del progetto. Quella sessione è l'<i>orchestratore</i>: non scrive codice, organizza il lavoro. È come un capo cantiere che non prende in mano il martello ma sa chi deve fare cosa e in che ordine.</div>
+  <div class="card"><b>2. Le «braccia» sono agenti usa-e-getta.</b><br>Per ogni compito la sessione lancia un piccolo Claude separato (un <i>sub-agente</i>) con istruzioni precise, in una copia isolata del progetto (<i>worktree</i>). Quando ha finito, fa <code>git commit</code> sul ramo del suo task, consegna un risultato in formato fisso e sparisce. Non ricorda nulla fra un compito e l'altro: tutto ciò che serve sta nei file e nel repository git. <b>Il merge lo fa qualcun altro</b>: l'agente <code>integrator</code> unisce i rami codice+test di ogni task sul ramo <code>integration/NNNN</code> (solo se i controlli passano); il merge finale su <code>main</code> lo fai tu.</div>
+  <div class="card"><b>3. I documenti LIMET li scrivi tu, prima; gli agenti li leggono.</b><br>PLAN, SPEC, TASK_LIST, TEST_PLAN, E2E li produci con il consueto prompt LIMET in una sessione normale e li approvi. L'ecosistema parte da quei documenti e <b>non ne crea né ne modifica</b>: scrive solo i propri file in <code>limet/changes/NNNN/ecosystem/</code>. Le regole restano quelle di LIMET: niente «fatto» senza test, niente commit sul ramo principale, niente build eseguite dall'IA; se manca un'informazione, l'agente si ferma e chiede a te.</div>
+</div>
+
+<h3>G.2 Esempio completo: «Aggiungi la gestione prestiti alla biblioteca»</h3>
+
+<p class="small">L'esempio è una <b>nuova feature</b> (App. B.4 di LIMET). Per un <b>progetto da zero</b> (B.2) il flusso è identico: i documenti del passo 0 descrivono lo scheletro iniziale e il primo task crea pom/compose/schema. Per un <b>bug fix</b> (B.3) il passo 0 produce BUG_REPORT + TASK_LIST + TEST_PLAN con il test di regressione, e l'ecosistema esegue prima il test (deve fallire), poi il fix, poi lo riesegue (deve passare).</p>
+<h4>Passo 0 — Tu prepari i documenti LIMET (sessione normale, come sempre)</h4>
+<pre>Tu (sessione Claude Code normale, cartella C:\Progetti\biblioteca):
+
+  Segui LIMET: crea la change 0002-prestiti. I lettori devono poter prendere in prestito
+  un libro disponibile (max 3 prestiti attivi, durata 30 giorni) e restituirlo.
+  Serve anche la pagina Prestiti nella SPA.</pre>
+<p>Come sempre con LIMET, la sessione ti propone PLAN.md, SPEC.md, TASK_LIST.md, TEST_PLAN.md, E2E_VERIFICATION.md dai template; tu li leggi, rispondi alle domande contestuali, correggi e approvi (chi + data in PLAN.md). Risultato: la cartella <code>limet/changes/0002-prestiti/</code> con i documenti pronti. <b>Questo è l'unico momento in cui nascono documenti LIMET.</b> Esempio di un pezzo di SPEC.md scritto in questo passo:</p>
+<pre>### Requisito R4: Prestito di una copia disponibile
+**Scenari** (dato/quando/allora):
+- **Dato** un libro con 2 copie disponibili e un lettore con 1 prestito attivo,
+  **quando** il lettore chiede il prestito, **allora** il prestito è creato con scadenza oggi+30
+  e le copie disponibili diventano 1.
+- **Dato** un lettore con 3 prestiti attivi, **quando** chiede un quarto prestito,
+  **allora** la richiesta è rifiutata con errore 409 "limite prestiti raggiunto".
+- **Dato** un libro con 0 copie disponibili, **quando** un lettore lo chiede,
+  **allora** errore 409 "nessuna copia disponibile".</pre>
+<p>E un estratto della TASK_LIST.md (tabella LIMET):</p>
+<pre>| # | Titolo                                         | Stato   | Dipende da | Dettaglio |
+| 4 | Service Prestiti: max 3, 30 giorni, disponibilità | pending | #2         |           |
+| 6 | Controller REST Lettori/Prestiti/Ritardi       | pending | #4         |           |
+| 7 | SPA: pagina Prestiti                           | pending | #0 (OpenAPI) |         |</pre>
+
+<h4>Passo 1 — Tu avvii l'ecosistema</h4>
+<pre>Tu (stessa cartella, nuova sessione Claude Code):
+
+  Usa il workflow limet-change per eseguire la change 0002-prestiti.</pre>
+<p>«Usa il workflow» è la frase che autorizza Claude Code a usare il tool <code>Workflow</code> (è un'autorizzazione esplicita, per evitare che parta da solo un lavoro costoso). Da qui in poi l'ecosistema lavora sui documenti del passo 0 senza toccarli.</p>
+
+<h4>Passo 1-bis — Dove è scritto chi fa cosa e quanti sono (non nel prompt)</h4>
+<p>Il prompt non deve elencare agenti e compiti: sono definiti una volta sola in tre posti, installati nel progetto insieme a LIMET.</p>
+<div class="callout"><b>Chi crea questi file?</b> Oggi non esistono: sono gli artefatti da realizzare (capitolo 7.1). Il percorso: (1) <b>si costruiscono una volta</b>, in una fase pilota, dal team usando Claude Code come strumento in una sessione normale e seguendo LIMET (PLAN, TASK_LIST, TEST_PLAN del pilota stesso), e si verificano con gli scenari del capitolo 7.4; (2) <b>si impacchettano come plugin Claude Code</b> (funzionalità nativa: cartella con <code>agents/</code>, <code>workflows/</code>, <code>skills/</code>, impostazioni), esterna a LIMET; (3) <b>si installano in ogni progetto</b> dopo <code>limet.ps1 init</code> con <code>claude --plugin-dir C:\software\limet-agents</code> oppure copiando <code>.claude/</code> nel progetto, e si aggiornano con un <code>update</code> come LIMET. Tu li scrivi una volta; poi ogni progetto li usa così come sono.</div>
+<p><b>Si rifanno per ogni progetto? No.</b> Come LIMET, si installano e si riusano. Ecco cosa è comune e cosa è specifico:</p>
+<table>
+<tr><th>Comune a tutti i progetti (nel plugin, scritto una volta)</th><th>Specifico del progetto (compilato all'installazione, da un esempio)</th></tr>
+<tr><td>Le 9 definizioni di agente: parlano di «task», «SPEC», «TEST_PLAN», mai di un progetto preciso</td><td><code>runner.config.json</code>: come si compila e testa <i>questo</i> progetto (<code>./mvnw</code> / gradle / npm, cartella dei report)</td></tr>
+<tr><td>Il workflow <code>limet-change.js</code> e lo scheduler</td><td><code>limits.json</code>: quanti agenti, budget, cap, modelli</td></tr>
+<tr><td>Le skill runner e report (gli script)</td><td><code>.mcp.json</code>: quale database read-only, quale collection CEREBRO</td></tr>
+<tr><td>I permessi di base (<code>deny</code> su build, push, merge su main)</td><td><code>docs-limet/conventions.md</code> e <code>invariants.md</code>: le regole di quel codice (LIMET te le fa già scrivere)</td></tr>
+</table>
+<p><b>Dove vanno salvati.</b> In due posti:</p>
+<pre>1) Il plugin, comune, fuori dai progetti (accanto a LIMET e CEREBRO; può essere un repo git proprio):
+C:\software\limet-agents  .claude-plugin\plugin.json         manifest del plugin Claude Code
+  agents\                            analyst.md developer.md tester.md reviewer.md integrator.md
+                                     test-reader.md validator.md e2e-designer.md e2e-reader.md _common.md
+  workflows\limet-change.js          + limet-scheduler.js (+ test)
+  skills\limet-runner\               SKILL.md run.ps1 run.sh runner.py runner.config.example.json
+  skills\limet-report\               SKILL.md nightly.py
+  settings.example.json  limits.example.json  mcp.example.json  README.md
+
+2) Nel progetto, specifico, accanto a limet\:
+C:\Progettiiblioteca  AGENTS.md  CLAUDE.md               scritti da limet.ps1 init
+  limet\                             manuale, template, changes\, archive  docs-limet\                        conventions.md, invariants.md (indicizzati da CEREBRO)
+  .claude\settings.json              permessi (deny build/push/merge) + hook
+  .mcp.json                          limet_search (CEREBRO) + db read-only
+  limits.json  runner.config.json
+  limet\changes 2-prestiti\       i tuoi documenti LIMET
+  limet\changes 2-prestiti\ecosystem\   tutto ciò che producono gli agenti</pre>
+<p><b>Chi dice a Claude Code di andare in <code>C:\software\limet-agents</code>?</b> Nessuno durante la sessione: si configura una volta con un meccanismo nativo di Claude Code. Tre modi:</p>
+<table>
+<tr><th>Modo</th><th>Come</th><th>Vale per</th><th>Note</th></tr>
+<tr><td>1 · Flag all'avvio</td><td><code>claude --plugin-dir C:\software\limet-agents</code></td><td>Quella sessione</td><td>Semplice, ma va ricordato ogni volta (o messo in un alias)</td></tr>
+<tr><td>2 · Impostazioni utente</td><td>In <code>~/.claude/settings.json</code>: cartella registrata come marketplace locale + plugin abilitato (<code>extraKnownMarketplaces</code>, <code>enabledPlugins</code>), come già avviene su questa macchina per un altro plugin; comandi <code>claude plugin marketplace add …</code> / <code>claude plugin install …</code> <span class="tag verif">sintassi da verificare con claude plugin --help</span></td><td>Tutti i progetti dell'utente</td><td>Nessun flag; ma ogni collega deve farlo sulla sua macchina</td></tr>
+<tr><td><b>3 · Impostazioni di progetto, automatico (adottato)</b></td><td>Lo script <code>limet-agents.ps1 init -ProjectPath …</code> (stesso modello di <code>limet.ps1</code>) esegue i comandi ufficiali di Claude Code con ambito progetto, che scrivono da soli il riferimento in <code>.claude/settings.json</code> del progetto; poi copia <code>limits.json</code>, <code>runner.config.json</code>, <code>.mcp.json</code> dagli esempi</td><td>Quel repository, per tutto il team</td><td>Committato con il progetto: chi lo apre ha già tutto; nessun flag, nessuna modifica a mano</td></tr>
+</table>
+<p>Cosa fa in pratica <code>limet-agents.ps1 init</code> (comandi verificati con <code>claude plugin --help</code> <span class="tag fatto">FATTO</span>; l'ambito <code>project</code> di <code>install</code> <span class="tag verif">da verificare</span>):</p>
+<pre># dentro la cartella del progetto
+claude plugin marketplace add C:\software\limet-agents --scope project   # registra la cartella come marketplace del progetto
+claude plugin install limet-agents@limet-agents --scope project           # abilita il plugin per il progetto
+Copy-Item (se assenti) limits.example.json → limits.json, runner.config.example.json → runner.config.json, mcp.example.json → .mcp.json
+# risultato: .claude/settings.json del progetto contiene il marketplace e il plugin abilitato (scritti da Claude Code, non a mano)</pre>
+<p>Da quel momento chiunque apra <code>claude</code> in quella cartella ha gli agenti, il workflow e le skill caricati automaticamente. L'aggiornamento del plugin (<code>claude plugin marketplace update limet-agents</code>) vale per tutti i progetti che lo referenziano.</p>
+<p>Alternativa senza plugin: copiare <code>agents/</code>, <code>workflows/</code>, <code>skills/</code> in <code>.claude/</code> del progetto; funziona, ma gli aggiornamenti vanno ricopiati a mano. Versionamento: i file specifici del progetto si committano con il progetto, così il team li condivide; nota che <code>limet.ps1</code> esclude già da git <code>AGENTS.md</code>, <code>CLAUDE.md</code> e <code>limet/</code> tramite <code>.git/info/exclude</code> (scelta locale di LIMET), quindi va deciso in modo coerente se escludere anche <code>.claude/</code> o tracciare tutto.</p>
+<p>Sequenza per un nuovo progetto: <code>limet.ps1 init</code> → <code>limet-agents.ps1 init</code> (registra il plugin nel progetto e copia i file di configurazione dagli esempi) → compili i tre file di configurazione → apri <code>claude</code>: il plugin c'è. Quando migliori un agente o il workflow, aggiorni il plugin e tutti i progetti lo ricevono con un <code>update</code>, come oggi con <code>limet.ps1 update</code>.</p>
+<table>
+<tr><th>Domanda</th><th>Dove è scritto</th><th>Esempio</th></tr>
+<tr><td><b>Chi sono gli agenti e cosa fa ciascuno</b></td><td>Un file per ruolo in <code>.claude/agents/</code>. Il nome del file è il ruolo; il frontmatter dice modello e strumenti; il testo dice le regole del mestiere e il formato della risposta.</td><td>Vedi il file <code>developer.md</code> qui sotto</td></tr>
+<tr><td><b>In che ordine e in parallelo con chi</b></td><td>Lo script <code>.claude/workflows/limet-change.js</code>: per ogni task della TASK_LIST lancia <code>developer</code> e <code>tester</code> insieme; quando consegnano, <code>integrator</code>; poi runner; poi <code>reviewer</code> e <code>validator</code> in parallelo (o <code>test-reader</code> se fallisce).</td><td>«T4: developer + tester → integrator → runner → reviewer ∥ validator»</td></tr>
+<tr><td><b>Quanti agenti alla volta</b></td><td>Non è un numero fisso: lo calcola lo scheduler a ogni onda come minimo fra task pronti senza conflitti, limite della macchina e budget. I limiti stanno in <code>limits.json</code>.</td><td>Vedi <code>limits.json</code> qui sotto</td></tr>
+<tr><td><b>Quali task</b></td><td>La TASK_LIST.md che hai scritto al passo 0, con le dipendenze nella colonna «Dipende da».</td><td>«#6 dipende da #4»</td></tr>
+</table>
+<p>Esempio di definizione di agente, <code>.claude/agents/developer.md</code> (installato una volta, vale per tutte le change):</p>
+<pre>---
+name: developer
+description: Implementa un singolo task LIMET nel worktree assegnato. Non esegue build né test.
+model: sonnet
+tools: Read, Edit, Write, Grep, Glob, Bash(git add *), Bash(git commit *), Bash(git status *), Bash(git diff *)
+---
+Sei un agente sviluppatore. Ricevi un brief con: numero del task della TASK_LIST, requisiti della SPEC,
+criteri di accettazione, file attesi, interfacce già decise, risposte del Supervisore.
+Regole (AGENTS.md / manuale LIMET):
+- Lavori solo nel worktree indicato e solo sui file del perimetro; altro file necessario → "scope_issue".
+- Non esegui mai ./mvnw, npm test o qualsiasi build/test: lo farà il runner sul commit che consegni.
+- Niente push, merge, rebase. Commit sul ramo del task con messaggio "T&lt;n&gt;: &lt;sintesi&gt;".
+- Per ogni file toccato produci una riga nel formato del "Registro modifiche" LIMET.
+- Se ti manca un'informazione o è contraddittoria: FERMATI, commit WIP, rispondi
+  { "status": "blocked", "questions": [...] } con fonti consultate e opzioni. Non assumere.
+Rispondi SOLO con JSON: { "status", "sha", "files", "changelog_rows", "notes", "questions", "discovered_dependencies" }</pre>
+<p>Esempio di <code>limits.json</code> (nella cartella del progetto; lo puoi cambiare senza toccare il resto):</p>
+<pre>{ "maxAgents": 3,            // al massimo 3 sub-agenti contemporanei su questo PC
+  "maxBuilds": 1,            // una sola build/test alla volta
+  "maxAttempts": 3,          // tentativi per task prima di fermarsi e chiedere
+  "budgetUsd": 30,           // tetto di spesa per questa change
+  "taskCap": { "files": 6, "diffLines": 300 },
+  "models": { "analyst": "opus", "developer": "sonnet", "tester": "sonnet", "reviewer": "opus",
+              "validator": "opus", "integrator": "sonnet", "test-reader": "haiku", "e2e-reader": "haiku" },
+  "night": { "maxHours": 8, "stopOnQuestions": true } }</pre>
+<p>Se vuoi cambiare qualcosa per una singola esecuzione lo dici nel prompt, e l'orchestratore lo riporta nello stato: «Usa il workflow limet-change per eseguire la change 0002-prestiti, massimo 2 agenti e budget 15 USD». Il resto resta quello dei file.</p>
+
+<h4>Passo 2 — L'orchestratore lancia l'analista</h4>
+<p>La sessione legge <code>AGENTS.md</code> (regole LIMET), trova la cartella <code>limet/changes/0002-prestiti/</code> con i documenti del passo 0, crea la sottocartella <code>ecosystem/</code> per i propri file e lancia il sub-agente <code>analyst</code>. L'analista:</p>
+<ul>
+  <li>legge PLAN.md, SPEC.md, TASK_LIST.md, TEST_PLAN.md (sola lettura);</li>
+  <li>per ogni task della TASK_LIST stima i file che verranno toccati con Graphify (<code>graphify query "dove sono gestiti i libri?"</code>) e recupera il contesto dai documenti con CEREBRO (<code>limet_search "regole prestito"</code>);</li>
+  <li>collega ogni task ai requisiti della SPEC e ai test del TEST_PLAN; se un task è troppo grande propone uno split (che tu confermi al passo 3);</li>
+  <li>se un documento manca o è contraddittorio si ferma e chiede: <b>non scrive documenti LIMET</b>;</li>
+  <li>restituisce il grafo di esecuzione in formato JSON (<code>ecosystem/plan.json</code>).</li>
+</ul>
+<p>Esempio del grafo JSON (solo due task, per brevità; i numeri sono quelli della TASK_LIST):</p>
+<pre>{ "tasks": [
+  { "id": "T4", "type": "dev", "title": "Service Prestiti: regole max 3, 30 giorni, disponibilità",
+    "files": ["src/main/java/biblioteca/prestiti/PrestitoService.java"],
+    "deps": ["T2"], "requirements": ["R4","R5"], "estimate": "M", "conflict_risk": "low" },
+  { "id": "T4t", "type": "test", "for": "T4", "title": "Unit test PrestitoService",
+    "files": ["src/test/java/biblioteca/prestiti/PrestitoServiceTest.java"],
+    "deps": ["T2"], "requirements": ["R4","R5"] } ] }</pre>
+
+<h4>Passo 3 — Tu confermi il grafo di esecuzione (gate umano)</h4>
+<p>Il piano LIMET l'hai già approvato al passo 0. Qui la sessione ti mostra <i>come</i> intende eseguirlo e chiede conferma:</p>
+<pre>┌ Avvio la change 0002-prestiti con questo grafo? ────────────────────────┐
+│ 7 task dalla TASK_LIST (4 dev, 3 test), 2 onde, stima 2-3 ore, 6-9 USD  │
+│ Proposta: dividere il task #6 in #6a (controller) e #6b (gestione errori)│
+│  ○ Conferma                                                             │
+│  ○ Conferma senza lo split di #6                                        │
+│  ○ Fermati, modifico prima la TASK_LIST con il prompt LIMET             │
+└──────────────────────────────────────────────────────────────────────────┘</pre>
+<p>La conferma finisce in <code>ecosystem/state.json</code> ed <code>events.jsonl</code>, non nei documenti LIMET. Da qui in poi la sessione lavora da sola finché non ha una domanda o ha finito.</p>
+
+<h4>Passo 4 — Partono gli agenti in parallelo</h4>
+<p>Lo scheduler (codice JavaScript dentro il workflow, non l'IA) guarda quali task possono partire: T4 dipende da T2 (già fatto nella change precedente), quindi è pronto. Lancia insieme <code>developer</code> per T4 e <code>tester</code> per T4t, ciascuno in una copia separata del progetto:</p>
+<pre>C:\Progetti\biblioteca\               ← progetto principale (nessuno lo tocca)
+C:\Progetti\wt-0002-T4\               ← copia per il developer, ramo task/0002-T4
+C:\Progetti\wt-0002-T4t\              ← copia per il tester,    ramo test/0002-T4t</pre>
+<p>Il tester <b>non vede</b> il codice del developer: scrive i test leggendo solo la SPEC e il TEST_PLAN che hai approvato al passo 0 (i casi sono già elencati lì; il tester li traduce in codice e aggiunge i casi limite che il TEST_PLAN richiede). Così i test verificano ciò che è richiesto, non ciò che è stato scritto. Esempio di test prodotto dal tester (JUnit, caso 3 del TEST_PLAN):</p>
+<pre>@Test
+void quartoPrestito_rifiutato() {
+    Lettore mario = lettoreConPrestitiAttivi(3);
+    Libro libro = libroConCopieDisponibili(2);
+    assertThrows(LimitePrestitiException.class, () -> service.prendiInPrestito(mario, libro));
+    assertEquals(2, libro.getCopieDisponibili());   // niente è cambiato
+}</pre>
+<p>E l'<b>autorevisione</b> che LIMET §5.1 richiede: il tester la esegue e la riporta nel suo risultato JSON (campo <code>self_review</code>), da cui tu la copierai nel TEST_PLAN a fine lavoro:</p>
+<pre>Sabotaggio mentale: se qualcuno cambiasse "max 3" in "max 4", il test quartoPrestito_rifiutato
+fallirebbe (sì). Se togliesse il decremento delle copie, il test prestito_decrementaCopie fallirebbe (sì).
+Se cambiasse la durata da 30 a 31 giorni: NESSUN test fallirebbe → aggiunto test scadenza_trentaGiorni.</pre>
+
+<h4>Passo 5 — Un agente ha un dubbio: si ferma e chiede</h4>
+<p>Il developer di T4 trova un'ambiguità: la SPEC non dice se un lettore con un prestito <i>in ritardo</i> possa prenderne un altro. Non decide da solo. Fa un commit di salvataggio e restituisce:</p>
+<pre>{ "status": "blocked",
+  "questions": [ {
+    "id": "Q3", "task": "T4", "type": "missing",
+    "question": "Un lettore con almeno un prestito in ritardo può prendere un nuovo prestito?",
+    "context": [
+      { "source": "SPEC.md#requisito-4", "finding": "parla solo del limite di 3 prestiti attivi" },
+      { "source": "docs-limet/glossary.md", "finding": "'in ritardo' definito, nessuna regola di blocco" } ],
+    "options": [
+      { "id": "A", "text": "Sì, conta solo il numero (max 3)", "consequence": "nessuna modifica alla SPEC" },
+      { "id": "B", "text": "No, i ritardi bloccano i nuovi prestiti", "consequence": "nuovo scenario in R4, nuovo test" } ],
+    "impact": { "blocks": ["T4", "T6"], "critical_path": true } } ] }</pre>
+<p>Cosa vedi tu sullo schermo:</p>
+<pre>┌ Domanda dal task T4 (developer) ────────────────────────────────────────┐
+│ Un lettore con almeno un prestito in ritardo può prendere un nuovo      │
+│ prestito? La SPEC R4 non lo dice.                                       │
+│  ○ A · Sì, conta solo il numero (max 3) — nessuna modifica alla SPEC    │
+│  ○ B · No, i ritardi bloccano — nuovo scenario in R4 e nuovo test       │
+└──────────────────────────────────────────────────────────────────────────┘</pre>
+<p><b>Intanto gli altri non si fermano</b>: il tester di T4t continua (sta scrivendo i test dei casi già chiari), e lo scheduler lancia T7 (pagina SPA) perché non dipende da T4. Quando rispondi «B», la sessione scrive la risposta in <code>ecosystem/QUESTIONS.md</code> (già nel formato della tabella «Domande contestuali» LIMET, con data e nome) e in <code>state.json</code>; poiché la risposta aggiunge uno scenario alla SPEC, ti avvisa: «la SPEC va aggiornata con il prompt LIMET: aggiungo lo scenario al brief di T4 e T4t e proseguo; ricordati di riportarlo in SPEC.md». T4 riparte dal punto in cui si era fermato, con la risposta nel brief. Nessun documento LIMET è stato modificato dall'ecosistema.</p>
+
+<h4>Passo 6 — Compilazione e test: li fa uno script, non l'IA</h4>
+<p>Quando developer e tester hanno consegnato, l'agente <code>integrator</code> unisce i due rami in <code>integration/0002</code>. Poi la sessione lancia la <b>skill runner</b> (uno script PowerShell/Bash dentro <code>.claude/skills/limet-runner/</code>):</p>
+<pre>runner all --worktree C:\Progetti\wt-0002-int --sha 7f3a9c1 --out limet/changes/0002-prestiti/runs/r-0017/</pre>
+<p>Lo script esegue <code>./mvnw verify</code> (compila, test, JaCoCo, PIT, SpotBugs), salva <b>tutto il log su disco</b> e produce un riepilogo piccolo:</p>
+<pre>{ "run_id": "r-0017", "sha": "7f3a9c1", "status": "FAIL",
+  "tests": { "total": 18, "passed": 17, "failed": 1, "skipped": 0 },
+  "failures": [ { "class": "PrestitoServiceTest", "method": "scadenza_trentaGiorni",
+                  "message": "expected 2026-11-26 but was 2026-11-27", "trace_ref": "log.txt#L812" } ],
+  "mutation": { "killed": 21, "survived": 2, "score": 0.91 },
+  "coverage_diff": 0.94, "static": { "errors": 0, "warnings": 3 } }</pre>
+<p>Perché così: LIMET vieta all'IA di lanciare build e test (il log riempirebbe la sua memoria di rumore e potrebbe «riassumere» male). Lo script è deterministico: stesso codice, stesso risultato. Nella memoria della sessione entra solo questo JSON.</p>
+
+<h4>Passo 7 — Chi ha sbagliato: il codice o il test?</h4>
+<p>Il sub-agente <code>test-reader</code> (un modello piccolo ed economico) legge il JSON e le 20 righe di log indicate da <code>trace_ref</code>. Decide: «difetto applicativo: il service somma 31 giorni (bug di confine)». Salva in <code>ecosystem/results/reader-r-0017.json</code> l'estratto reale del log (non un riassunto) nel formato che il TEST_EXECUTION LIMET si aspetta (comando, esito, log), e apre un task di correzione <code>T4-fix1</code> assegnato al developer. Il TEST_EXECUTION.md vero lo compilerai tu alla fine, con il prompt LIMET, incollando questi estratti. Se avesse deciso «difetto del test» (atteso sbagliato rispetto alla SPEC), il fix sarebbe andato al tester.</p>
+
+<h4>Passo 8 — Revisione e verdetto</h4>
+<p>Al secondo giro il runner dà PASS. Partono in parallelo due agenti:</p>
+<ul>
+  <li><code>reviewer</code> (modello diverso dal developer) legge SPEC + diff e produce findings. Esempio: <code>{ "severity": "blocking", "file": "PrestitoService.java", "line": 58, "rule": "invariants#no-pii-log", "why": "logga l'email del lettore" }</code>. Un finding bloccante rimanda il task al developer.</li>
+  <li><code>validator</code> prende i report del runner e del lettore (esiti dei test, copertura, mutation) e li confronta con i requisiti della SPEC: per ogni requisito cerca le prove e segnala requisiti senza test o test senza requisito. Non può dire «conforme» perché «sembra giusto»: deve indicare quali test, in quale run, su quale commit.</li>
+</ul>
+<pre>Verdetto R4: CONFORME
+  evidenze: PrestitoServiceTest#prestito_decrementaCopie (r-0019 PASS, sha 9b21e04)
+            PrestitoServiceTest#quartoPrestito_rifiutato  (r-0019 PASS, sha 9b21e04)
+            PrestitoServiceTest#ritardo_bloccaNuovoPrestito (r-0019 PASS, sha 9b21e04)
+Verdetto R7 (pagina SPA): NON DETERMINABILE
+  motivo: nessun test e2e eseguito ancora (T10 non integrato)</pre>
+<p>Solo ora T4 diventa <code>VERIFIED</code> in <code>ecosystem/state.json</code>, con data e ora (<code>2026-10-27 23:41</code>). La TASK_LIST.md non viene toccata: la riga «#4 … done · 2026-10-27 23:41» la scriverai tu a fine lavoro con il prompt LIMET, copiandola dal report finale.</p>
+
+<h4>Passo 9 — La fine (o la pausa)</h4>
+<p>Quando tutti i task sono verificati, il runner fa un ultimo giro completo, il validatore produce <code>ecosystem/REPORT_CONFORMITA.md</code> e la sessione genera <code>ecosystem/REPORT_FINALE.md</code>: per ogni task stato, data/ora, righe di registro modifiche pronte, estratti di log, domande e risposte, costi. Poi ti chiede se fare il merge sul ramo principale (non lo fa mai da sola). Se invece i soldi finiscono, o tutto dipende da una tua risposta, si ferma e scrive chiaramente «INCOMPLETO» o «IN ATTESA DEL SUPERVISORE»: mai «completato» se non lo è.</p>
+
+<h4>Passo 10 — Tu chiudi la change con LIMET (sessione normale)</h4>
+<pre>Tu (sessione Claude Code normale):
+
+  Segui LIMET: chiudi la change 0002-prestiti usando limet/changes/0002-prestiti/ecosystem/REPORT_FINALE.md
+  come fonte. Compila TEST_EXECUTION.md con i log reali, aggiorna TASK_LIST.md (stati done con data/ora,
+  Registro modifiche, Esito implementazione), riporta le domande contestuali in PLAN.md, aggiorna SPEC.md
+  con lo scenario Q3, crea ARCHIVE_ENTRY.md.</pre>
+<p>È il consueto flusso LIMET di chiusura: i documenti li produce la sessione normale leggendo il report, tu li controlli, poi re-index dal Launcher. L'ecosistema ha fornito le evidenze; LIMET resta la fonte di verità documentale.</p>
+
+<h4>Chi fa il merge, in tre livelli</h4>
+<table>
+<tr><th>Livello</th><th>Chi</th><th>Cosa</th><th>Condizione</th></tr>
+<tr><td>1 · Ramo del task</td><td>developer / tester (nel proprio worktree)</td><td>Solo <code>git commit</code> su <code>task/0002-T4</code> o <code>test/0002-T4t</code>; il worktree sparisce, il ramo resta nel repository</td><td>Nessun push, nessun merge</td></tr>
+<tr><td>2 · Ramo di integrazione</td><td>agente <code>integrator</code></td><td>Unisce codice e test del task su <code>integration/0002</code>; conflitti banali (import, formattazione) risolti e registrati; conflitti semantici → rimandati al developer con il diff</td><td>Subito dopo il runner compila e testa quello sha; il task avanza solo se tutti i gate sono verdi</td></tr>
+<tr><td>3 · Ramo principale</td><td><b>tu</b></td><td>Merge (o PR) di <code>integration/0002</code> su <code>main</code> dopo report e campione a rischio</td><td>Vietato a ogni agente dai permessi (<code>deny: Bash(git push*)</code>, nessun merge su <code>main</code>)</td></tr>
+</table>
+
+<h3>G.3 Cosa trovi la mattina dopo (se hai lanciato di notte)</h3>
+<pre>limet/changes/0002-prestiti/REPORT_NOTTURNO.md
+
+## Stato: IN ATTESA DEL SUPERVISORE (2 domande aperte)
+Task: 9 verificati · 1 in attesa (T6) · 1 pronto ma dipendente (T10) · 0 bloccati
+Requisiti: R1-R6 conformi · R7 non determinabile (e2e non eseguito)
+Build finale: PASS (sha 2c77d10) · regressione completa: 64/64 PASS
+Qualità: copertura nuove righe 93% · mutation 0.89 · statica 0 errori · invarianti 0 violazioni
+
+## Domande aperte (rispondi per sbloccare)
+Q5 (T6): "L'endpoint /prestiti/ritardi è pubblico o solo per bibliotecari?" — opzioni A/B
+
+## Decisioni prese da sola stanotte (da controllare)
+- 02:14 T5 e T6 toccavano entrambi ErrorHandler.java → serializzati (T5 prima)
+- 03:40 T8 fallito 2 volte sullo stesso test → aperta Q5 invece di terzo tentativo
+
+## Da leggere oggi (campione a rischio, ~40 minuti)
+1. T4 PrestitoService — regole di dominio, 2 tentativi, 1 finding risolto   → diff 120 righe
+2. T9 test di integrazione — tocca il DB                                        → diff 90 righe
+3. T5 ErrorHandler — file condiviso, decisione autonoma                         → diff 35 righe
+
+## Costi: 14,2 USD (API) · 61 esecuzioni agente · 19 run del runner · 5h 12m</pre>
+<p>Tu leggi tre diff (non 25 classi), rispondi a Q5, e decidi il merge. Il resto è accettato perché ha passato i controlli meccanici: è una scelta esplicita e scritta, non una dimenticanza.</p>
+
+<h3>G.4 I file che compongono l'ecosistema, spiegati</h3>
+<table>
+<tr><th>File / cartella</th><th>Cos'è, in parole semplici</th><th>Esempio</th></tr>
+<tr><td><code>AGENTS.md</code> + <code>CLAUDE.md</code></td><td>Le regole della casa, scritte da <code>limet.ps1</code> in <code>AGENTS.md</code> (unico file). Claude Code legge <code>CLAUDE.md</code>, che contiene la riga <code>@AGENTS.md</code> e quindi importa le regole (LIMET §9.1). Ogni agente le riceve all'avvio.</td><td>«Nessun task può essere marcato done senza test»; «MAI eseguire build o test»</td></tr>
+<tr><td><code>limet/templates/</code></td><td>I moduli da compilare (piano, specifica, elenco task, piano di test…).</td><td><code>SPEC_TEMPLATE.md</code> → <code>SPEC.md</code> della change</td></tr>
+<tr><td><code>limet/changes/0002-prestiti/</code></td><td>La cartella LIMET della modifica: i documenti che hai scritto tu con il prompt LIMET. L'ecosistema li legge e basta.</td><td><code>PLAN.md</code>, <code>SPEC.md</code>, <code>TASK_LIST.md</code>, <code>TEST_PLAN.md</code></td></tr>
+<tr><td><code>limet/changes/0002-prestiti/ecosystem/</code></td><td>La sottocartella dell'ecosistema: tutto ciò che gli agenti producono. Separata, così i documenti LIMET restano puliti.</td><td><code>state.json</code>, <code>events.jsonl</code>, <code>runs/r-0017/result.json</code>, <code>QUESTIONS.md</code>, <code>REPORT_FINALE.md</code></td></tr>
+<tr><td><code>.claude/agents/developer.md</code></td><td>La «scheda del mestiere» di un agente: cosa sa fare, quali strumenti può usare, come deve rispondere.</td><td><code>tools: Read, Edit, Write, Bash(git commit *)</code> — niente <code>./mvnw</code>, niente <code>git push</code></td></tr>
+<tr><td><code>.claude/workflows/limet-change.js</code></td><td>La «ricetta» che l'orchestratore segue: ordine dei passi, chi lanciare, quando fermarsi. È codice, quindi fa sempre la stessa cosa.</td><td>«lancia dev e tester insieme; quando entrambi consegnano, integra e chiama il runner»</td></tr>
+<tr><td><code>.claude/skills/limet-runner/</code></td><td>Lo script che compila e testa al posto dell'IA e scrive un riepilogo.</td><td><code>runner test --select PrestitoServiceTest</code></td></tr>
+<tr><td><code>.claude/settings.json</code></td><td>I permessi: cosa è vietato a tutti gli agenti, qualunque cosa dica il prompt.</td><td><code>"deny": ["Bash(./mvnw*)", "Bash(git push*)"]</code></td></tr>
+<tr><td><code>.mcp.json</code></td><td>Gli «sportelli» esterni che gli agenti possono interrogare: documenti (CEREBRO) e database in sola lettura.</td><td><code>limet_search "regole prestito"</code>; <code>SELECT count(*) FROM prestito</code></td></tr>
+<tr><td><code>state.json</code></td><td>La lavagna con lo stato vero di ogni task. La scrive solo il workflow.</td><td><code>"T4": { "state": "VERIFIED", "done_at": "2026-10-27 23:41" }</code></td></tr>
+<tr><td><code>events.jsonl</code></td><td>Il diario: una riga per ogni cosa successa, in ordine. Serve per capire «perché» al mattino.</td><td><code>{"t":"02:14","type":"decision.serialize","tasks":["T5","T6"],"why":"ErrorHandler.java in comune"}</code></td></tr>
+</table>
+
+<h3>G.5 Domande frequenti</h3>
+<table>
+<tr><th>Domanda</th><th>Risposta semplice</th></tr>
+<tr><td>Perché l'IA non lancia i test da sola? Sarebbe più veloce.</td><td>Perché LIMET lo vieta per un motivo preciso: il log dei test è lungo e rumoroso; se entra nella memoria dell'IA ne peggiora le decisioni, e l'IA potrebbe «raccontare» un esito invece di riportarlo. Lo script fa la stessa cosa in modo ripetibile e consegna solo i numeri.</td></tr>
+<tr><td>Quanti agenti lavorano insieme?</td><td>Non un numero fisso. Lo scheduler calcola ogni volta: quanti task sono pronti e non si pestano i piedi, quanta memoria ha il PC, quanto budget resta. Su questo PC: al massimo 3 agenti e 1 build alla volta.</td></tr>
+<tr><td>E se due agenti modificano lo stesso file?</td><td>Lavorano in copie separate, quindi non si disturbano mentre scrivono. Al momento di unire, se c'è conflitto, l'integratore lo segnala; se è banale lo risolve, altrimenti rimanda al developer. Meglio ancora: l'analista cerca di non far partire insieme task che toccano lo stesso file.</td></tr>
+<tr><td>Chi decide che un requisito è soddisfatto?</td><td>Il validatore, ma solo con prove: test eseguiti con esito positivo sull'ultima versione del codice. Senza prove dice «non determinabile». Non può dire «conforme» leggendo il codice.</td></tr>
+<tr><td>Cosa succede se un agente «inventa» invece di chiedere?</td><td>È vietato dalle istruzioni, ma le istruzioni da sole non bastano: per questo ci sono i controlli meccanici (test, mutation, reviewer con modello diverso) che intercettano il risultato sbagliato, e il campione a rischio che tu leggi.</td></tr>
+<tr><td>Posso lanciarlo la sera e vedere la mattina?</td><td>Sì, in background. Lavora finché ha task indipendenti; quando tutto dipende da una tua risposta si ferma e aspetta. Non fa mai il merge sul ramo principale da sola.</td></tr>
+<tr><td>Quanto costa?</td><td>Per la biblioteca intera (backend, DB, SPA, test, e2e) circa 25 USD di API con i modelli consigliati, fra 20 e 45 secondo le scelte. Dettagli nel capitolo 6.</td></tr>
+<tr><td>Chi scrive i documenti LIMET?</td><td>Tu, con il consueto prompt LIMET, prima (PLAN, SPEC, TASK_LIST, TEST_PLAN, E2E) e dopo (TEST_EXECUTION, esito, archivio). Gli agenti li leggono e producono solo i propri file in <code>ecosystem/</code>, in un formato già pronto da copiare nei documenti LIMET.</td></tr>
+<tr><td>Se usiamo solo Claude, perché c'è <code>AGENTS.md</code>?</td><td>È il meccanismo di LIMET (§9.1): lo script scrive le regole una volta sola in <code>AGENTS.md</code> e mette in <code>CLAUDE.md</code> l'import <code>@AGENTS.md</code>, una funzione nativa di Claude Code. Così <code>limet.ps1 update</code> aggiorna le regole senza toccare le tue personalizzazioni in <code>CLAUDE.md</code>. Volendo si può copiare il blocco in <code>CLAUDE.md</code>, ma si perde l'aggiornamento automatico.</td></tr>
+<tr><td>Serve installare altro oltre a LIMET e Claude Code?</td><td>Gli strumenti di contesto che LIMET già prevede (CEREBRO con Qdrant e Ollama, Graphify) e la toolchain del progetto (Java, Maven, Docker, Playwright per i test e2e). Nessun altro sistema di agenti.</td></tr>
+</table>
+</section>
+
+<!-- ======================================================================= -->
+<section class="page" data-id="1" data-title="Architettura">
+<h2>1 · Architettura: una sessione Claude Code che orchestra su LIMET</h2>
+
+<h3>1.1 Vista d'insieme</h3>
+<svg class="diag" viewBox="0 0 1000 420">
+  <defs><marker id="a1" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#8b96a8"/></marker></defs>
+  <rect class="box acc" x="20" y="20" width="440" height="210"/><text x="240" y="45" text-anchor="middle" class="t">SESSIONE CLAUDE CODE (orchestratore)</text>
+  <rect class="box" x="40" y="60" width="190" height="60"/><text x="135" y="83" text-anchor="middle" class="t">Workflow «limet-change»</text><text x="135" y="101" text-anchor="middle" class="lbl">.claude/workflows/ · scheduler JS</text>
+  <rect class="box" x="250" y="60" width="190" height="60"/><text x="345" y="83" text-anchor="middle" class="t">Tool Agent ×N</text><text x="345" y="101" text-anchor="middle" class="lbl">.claude/agents/ · worktree</text>
+  <rect class="box ok" x="40" y="140" width="190" height="60"/><text x="135" y="163" text-anchor="middle" class="t">AskUserQuestion</text><text x="135" y="181" text-anchor="middle" class="lbl">Supervisore umano</text>
+  <rect class="box vio" x="250" y="140" width="190" height="60"/><text x="345" y="163" text-anchor="middle" class="t">Skill limet-runner</text><text x="345" y="181" text-anchor="middle" class="lbl">script build·test·e2e → result.json</text>
+  <rect class="box" x="500" y="20" width="240" height="210"/><text x="620" y="45" text-anchor="middle" class="t">Progetto target (git)</text><text x="620" y="68" text-anchor="middle" class="lbl">AGENTS.md (blocco LIMET) · CLAUDE.md</text><text x="620" y="86" text-anchor="middle" class="lbl">limet/ (manuale, template, changes, archive)</text><text x="620" y="104" text-anchor="middle" class="lbl">limet/changes/0001-biblioteca/</text><text x="620" y="122" text-anchor="middle" class="lbl">PLAN SPEC TASK_LIST TEST_* state.json</text><text x="620" y="140" text-anchor="middle" class="lbl">events.jsonl · runs/ · briefs/ · results/</text><text x="620" y="164" text-anchor="middle" class="lbl">.claude/{agents,workflows,skills,settings.json}</text><text x="620" y="182" text-anchor="middle" class="lbl">.mcp.json (limet_search, db read-only)</text><text x="620" y="206" text-anchor="middle" class="lbl">worktree ../wt-T2 · branch task/* integration/0001</text>
+  <rect class="box inf" x="770" y="20" width="210" height="100"/><text x="875" y="45" text-anchor="middle" class="t">CEREBRO (App. A LIMET)</text><text x="875" y="65" text-anchor="middle" class="lbl">C:\software\cerebro</text><text x="875" y="83" text-anchor="middle" class="lbl">Qdrant · Ollama · limet_mcp.py</text><text x="875" y="101" text-anchor="middle" class="lbl">limet_rag.py (hook)</text>
+  <rect class="box inf" x="770" y="130" width="210" height="100"/><text x="875" y="155" text-anchor="middle" class="t">Graphify (App. A LIMET)</text><text x="875" y="175" text-anchor="middle" class="lbl">graphify-out/graph.json</text><text x="875" y="193" text-anchor="middle" class="lbl">query · explain · path</text><text x="875" y="211" text-anchor="middle" class="lbl">AST locale, nessun LLM</text>
+  <rect class="box" x="20" y="260" width="960" height="140"/><text x="500" y="285" text-anchor="middle" class="t">Ruoli (tutti sub-agenti Claude Code, stateless, risultato JSON validato da schema)</text><text x="500" y="310" text-anchor="middle" class="lbl">analyst · developer · tester · reviewer · integrator · test-reader · validator · e2e-designer · e2e-reader</text><text x="500" y="332" text-anchor="middle" class="lbl">Regola comune: «se manca un'informazione, fermati, commit WIP, restituisci blocked + questions[]; non assumere»</text><text x="500" y="354" text-anchor="middle" class="lbl">Permessi per ruolo nel frontmatter tools: e in settings.json deny: nessun agente esegue ./mvnw, git push, git merge su main</text><text x="500" y="376" text-anchor="middle" class="lbl">Solo la skill runner (script) esegue build e test; i log restano su disco; nel contesto entra solo result.json</text>
+  <path class="arr" d="M460,125 L500,125" style="marker-end:url(#a1)"/><path class="arr" d="M740,70 L770,70" style="marker-end:url(#a1)"/><path class="arr" d="M740,180 L770,180" style="marker-end:url(#a1)"/><path class="arr" d="M240,260 L240,230" style="marker-end:url(#a1)"/>
+</svg>
+
+<h3>1.2 Mappa esigenza → funzionalità Claude Code / LIMET</h3>
+<table>
+<tr><th>Esigenza del mandato</th><th>Funzionalità usata</th><th>Dove vive</th><th>Nota / da verificare</th></tr>
+<tr><td>Orchestratore con scheduler non arbitrario</td><td><span class="tag claude">Workflow</span> salvato in <code>.claude/workflows/limet-change.js</code>: il grafo, i conflitti, il budget e le transizioni sono codice JS deterministico; l'orchestratore LLM lo avvia (opt-in dell'utente: «usa un workflow»), legge il riepilogo, pone le domande</td><td>Progetto target</td><td>Linea guida &lt;10 agenti per run: un run per onda, ripresa con <code>resumeFromRunId</code> (risultati già ottenuti in cache)</td></tr>
+<tr><td>Agenti specializzati, isolati, paralleli</td><td><span class="tag claude">Agent</span> con <code>subagent_type</code> definito in <code>.claude/agents/&lt;ruolo&gt;.md</code> (frontmatter <code>name, description, model, tools</code>), <code>isolation: "worktree"</code>; lanciati in <code>parallel()</code> dal Workflow</td><td><code>.claude/agents/</code></td><td>Nome del branch/worktree creato dal tool: verificare per il merge su <code>integration/0001</code> (prerequisito 6.1-4)</td></tr>
+<tr><td>Input di lavoro: documenti LIMET già scritti dall'utente</td><td>Lettura (sola lettura) di <code>limet/changes/NNNN/{PLAN,SPEC,TASK_LIST,TEST_PLAN,E2E_VERIFICATION}.md</code>; il grafo dei task nasce dalla tabella di TASK_LIST (#, dipendenze) e dai requisiti della SPEC</td><td><code>limet/changes/NNNN/</code></td><td>Se i documenti mancano o sono incompleti, l'analyst si ferma e lo segnala al Supervisore: non li scrive</td></tr>
+<tr><td>Contesto tecnico da LIMET</td><td>Blocco <code>AGENTS.md</code> (letto via <code>@AGENTS.md</code> in <code>CLAUDE.md</code>) + <code>limet/</code> + MCP <code>limet_search</code> (CEREBRO) + hook <code>limet_rag.py</code> + <code>Bash(graphify *)</code></td><td><code>AGENTS.md</code>, <code>.mcp.json</code>, <code>.claude/settings.json</code></td><td>Il progetto va registrato in CEREBRO con <code>limet-index init</code>; LIMET stesso va indicizzato (6.1-1)</td></tr>
+<tr><td>Build/test/e2e senza violare «l'agente non esegue mai build»</td><td><span class="tag runner">Skill <code>limet-runner</code></span>: <code>.claude/skills/limet-runner/SKILL.md</code> + script <code>run.ps1</code>/<code>run.sh</code>; l'orchestratore la invoca con <code>Bash</code>; lo script esegue <code>./mvnw</code>, Playwright ecc. e scrive <code>runs/&lt;id&gt;/result.json</code> + <code>log.txt</code>; solo <code>result.json</code> torna nel contesto</td><td><code>.claude/skills/</code></td><td>Richiede l'estensione del manuale §1.3 (cap. 7, M.1): «esecutore deterministico per conto dell'utente»</td></tr>
+<tr><td>Supervisore umano, «fermati e chiedi»</td><td><span class="tag claude">AskUserQuestion</span> nella sessione; regola comune in ogni agente; campo <code>questions[]</code> nello schema dei risultati</td><td><code>.claude/agents/_common.md</code> (incluso nei prompt)</td><td>I sub-agenti non parlano con l'umano: le domande passano per l'orchestratore</td></tr>
+<tr><td>Permessi minimi per ruolo</td><td>Frontmatter <code>tools:</code>; <code>permissions.deny</code> in <code>.claude/settings.json</code>; hook <code>PreToolUse</code> che nega e registra; <code>--permission-mode acceptEdits</code> per la sessione</td><td><code>.claude/settings.json</code></td><td>Mai <code>bypassPermissions</code>/<code>--dangerously-skip-permissions</code></td></tr>
+<tr><td>Stato condiviso, tracciabilità</td><td>File in <code>limet/changes/NNNN/ecosystem/</code>: <code>state.json</code> (unico scrittore: il Workflow), <code>events.jsonl</code> (append), <code>briefs/</code>, <code>results/</code>, <code>runs/</code>, <code>QUESTIONS.md</code>, <code>REPORT_*.md</code>. I documenti LIMET restano intatti: l'utente li aggiorna a fine lavoro con il prompt LIMET partendo dal report</td><td><code>limet/changes/NNNN/ecosystem/</code></td><td>Scrittura atomica (tmp + rename), come fa <code>scripts/limet_related.py</code> di LIMET</td></tr>
+<tr><td>Verifica di stato pre/post (TEST_PLAN, E2E)</td><td>MCP database in sola lettura in <code>.mcp.json</code> (App. A §2.3 LIMET)</td><td><code>.mcp.json</code></td><td>Server MCP DB da configurare per PostgreSQL del progetto</td></tr>
+<tr><td>E2E su browser</td><td><span class="tag claude">Claude in Chrome</span> per l'esplorazione guidata (agente <code>e2e-designer</code>); esecuzione deterministica dello script Playwright generato tramite la skill runner</td><td><code>e2e/</code> nel progetto</td><td>Chrome da installare; Playwright è il framework di test del progetto (come JUnit), non un componente dell'ecosistema</td></tr>
+<tr><td>Esecuzione lunga / notturna</td><td><code>--bg</code>, <code>claude agents / attach / logs</code>, compattazione automatica, checkpoint per onda in <code>state.json</code>, resume del Workflow</td><td>Sessione</td><td>La memoria della sessione non è lo stato: lo è <code>state.json</code></td></tr>
+<tr><td>Budget e costi</td><td><code>--max-budget-usd</code> (in <code>-p</code>); <code>effort</code> per agente; contatori in <code>events.jsonl</code> dal Workflow</td><td>Sessione / <code>limits.json</code></td><td>In sessione interattiva il limite è applicato dallo script <span class="tag ipotesi"></span></td></tr>
+<tr><td>Riuso su altri progetti</td><td>Plugin Claude Code (<code>--plugin-dir</code>) che impacchetta <code>agents/</code>, <code>workflows/</code>, <code>skills/</code>, <code>settings</code>; installato dopo <code>limet.ps1 init</code></td><td>Cartella plugin</td><td>Alternativa: copia di <code>.claude/</code> nel progetto</td></tr>
+</table>
+
+<h3>1.3 Ruoli (sub-agenti) e contratto I/O</h3>
+<table>
+<tr><th>Ruolo</th><th>Modello</th><th>Tool consentiti (frontmatter)</th><th>Input</th><th>Output JSON (schema)</th><th>Documenti LIMET letti (mai scritti)</th></tr>
+<tr><td><b>analyst</b></td><td>Opus 5.5</td><td>Read, Grep, Glob, Bash(graphify *), MCP limet_search, Write(limet/changes/**)</td><td>PLAN, SPEC, TASK_LIST, TEST_PLAN già scritti; codice; docs</td><td><code>plan.json</code>: per ogni task di TASK_LIST → id, tipo, file stimati (Graphify), dipendenze, requisiti SPEC, stima, rischio conflitto, split proposto se oltre il cap; <code>questions[]</code> se i documenti sono incompleti</td><td>PLAN, SPEC, TASK_LIST, TEST_PLAN</td></tr>
+<tr><td><b>developer</b></td><td>Sonnet 5.5</td><td>Read, Edit, Write, Grep, Glob, Bash(git add *), Bash(git commit *), Bash(git status *), Bash(git diff *)</td><td>Brief del task, SPEC, contratto, worktree</td><td><code>status</code>, <code>sha</code>, <code>files[]</code>, <code>changelog_rows[]</code> (nel formato del «Registro modifiche» LIMET, pronte da copiare), <code>notes</code>, <code>questions[]</code>, <code>discovered_dependencies[]</code></td><td>SPEC, TASK_LIST (riga del task), TASK.md se esiste</td></tr>
+<tr><td><b>tester</b></td><td>Sonnet 5.5</td><td>come developer, nel worktree <code>test/</code></td><td>SPEC, contratto (non il diff del dev)</td><td>Codice dei test previsti dal TEST_PLAN; <code>tests[]</code> (id → requisito → classe#metodo → comando), esito dell'autorevisione §5.1, <code>questions[]</code> se il TEST_PLAN è ambiguo</td><td>SPEC, TEST_PLAN, E2E_VERIFICATION</td></tr>
+<tr><td><b>reviewer</b></td><td>Opus 5.5 (diverso dal dev)</td><td>Read, Grep, Glob</td><td>SPEC + diff + <code>docs-limet/conventions.md</code> + invarianti</td><td><code>findings[]</code> {severity, file, line, rule, why}</td><td>—</td></tr>
+<tr><td><b>integrator</b></td><td>Sonnet 5.5</td><td>Bash(git merge *), Bash(git rebase *), Bash(git worktree *), Read</td><td>Branch dev+test del task</td><td><code>integration_sha</code> o <code>conflicts[]</code></td><td>Note in TASK_LIST</td></tr>
+<tr><td><b>test-reader</b></td><td>Haiku 5.5</td><td>Read, Grep, Write(limet/changes/**)</td><td><code>result.json</code> + finestre di <code>log.txt</code></td><td>Classificazione: app_defect | test_defect | contract_ambiguity | infra; estratti reali del log; <code>questions[]</code>. Va in <code>results/</code>: è la materia prima del TEST_EXECUTION che scriverà l'utente</td><td>TEST_PLAN</td></tr>
+<tr><td><b>validator</b></td><td>Opus 5.5</td><td>Read, Grep, Write(limet/changes/**)</td><td>SPEC, TEST_PLAN, TEST_EXECUTION, run, diff</td><td><code>verdicts[]</code> per requisito: conforme | non conforme | non determinabile, con <code>evidence[]</code> obbligatorio (test id, run id, sha) → <code>ecosystem/REPORT_CONFORMITA.md</code></td><td>SPEC (tabella tracciabilità), TEST_PLAN</td></tr>
+<tr><td><b>e2e-designer</b></td><td>Sonnet 5.5</td><td>Read, Write(e2e/**), Claude in Chrome, MCP db read-only</td><td>SPEC, E2E_VERIFICATION già scritta, app di test avviata</td><td>Script Playwright che automatizza i passi dell'E2E_VERIFICATION + matrice requisito→caso</td><td>SPEC, E2E_VERIFICATION</td></tr>
+<tr><td><b>e2e-reader</b></td><td>Haiku 5.5</td><td>Read</td><td>Report Playwright, trace</td><td>Classificazione per caso, con riferimento a trace/screenshot → <code>results/</code></td><td>E2E_VERIFICATION</td></tr>
+</table>
+<p class="small">Il <b>Supervisore</b> non è un agente: è la persona in sessione. L'<b>orchestratore</b> è la sessione stessa, con la skill runner e il Workflow.</p>
+</section>
+
+<!-- ======================================================================= -->
+<section class="page" data-id="2" data-title="Modello di esecuzione">
+<h2>2 · Modello di esecuzione</h2>
+
+<h3>2.0 Ciclo in una sessione</h3>
+<ol>
+  <li><b>Prima dell'ecosistema (sessione LIMET normale)</b>: l'utente, con il consueto prompt LIMET, fa scrivere e approva i documenti della change in <code>limet/changes/0001-biblioteca/</code>: PLAN.md (approvato da + data), SPEC.md (R1..Rn con scenari dato/quando/allora), TASK_LIST.md (task con dipendenze e strategia di test), TEST_PLAN.md, E2E_VERIFICATION.md. Questo è l'unico momento in cui si creano documenti LIMET.</li>
+  <li><b>Avvio dell'ecosistema</b>: l'utente apre Claude Code nel progetto target (con blocco LIMET in <code>AGENTS.md</code>, <code>.claude/agents</code>, <code>.claude/workflows</code>, <code>.claude/skills</code>, <code>.mcp.json</code>) e chiede: «usa il workflow limet-change per eseguire la change 0001-biblioteca».</li>
+  <li><b>Analisi del piano esistente</b>: sub-agente <code>analyst</code> (Opus) legge PLAN/SPEC/TASK_LIST/TEST_PLAN e produce <code>plan.json</code>: per ogni task della TASK_LIST stima i file con Graphify, collega i requisiti della SPEC e i test del TEST_PLAN, segnala i task oltre il cap proponendo uno split; se i documenti sono incompleti o contraddittori si ferma e chiede. Non scrive documenti LIMET.</li>
+  <li><b>Gate umano</b>: <code>AskUserQuestion</code> → conferma del grafo di esecuzione (onde, split proposti, modelli, budget); registrata in <code>ecosystem/state.json</code> ed <code>events.jsonl</code>.</li>
+  <li><b>Onde</b>: lo script Workflow, per ogni onda: calcola i task pronti senza conflitti di file, lancia in parallelo fino a <code>maxAgents</code> sub-agenti (<code>developer</code> e <code>tester</code> dello stesso task insieme, in worktree separati), raccoglie i risultati validati da schema, scrive stato ed eventi, raccoglie le <code>questions[]</code> per il Supervisore, integra i task consegnati su <code>integration/0001</code> con <code>integrator</code>, invoca la skill runner (build, lint, test, mutation, copertura differenziale), poi <code>test-reader</code> sui fallimenti oppure <code>reviewer</code> e <code>validator</code> sui successi; i task con tutti i gate verdi diventano <code>VERIFIED</code>, i falliti generano task <code>fix</code>.</li>
+  <li><b>Domande</b>: fra un'onda e l'altra l'orchestratore pone al Supervisore le domande raccolte; i task in attesa restano fermi, tutti gli altri ripartono nell'onda successiva.</li>
+  <li><b>E2E</b>: quando backend e SPA sono integrati, <code>e2e-designer</code> esplora l'app con Claude in Chrome e scrive i casi Playwright; la skill runner li esegue con l'app avviata localmente (compose); <code>e2e-reader</code> classifica gli esiti.</li>
+  <li><b>Chiusura dell'ecosistema</b>: run completo finale, validatore globale, <code>ecosystem/REPORT_CONFORMITA.md</code> (requisiti ↔ evidenze), <code>ecosystem/REPORT_FINALE.md</code> (task, esiti, righe di registro modifiche pronte, estratti di log, domande e risposte, costi), richiesta di merge all'umano.</li>
+  <li><b>Chiusura LIMET (sessione LIMET normale)</b>: l'utente, con il consueto prompt, fa compilare TEST_EXECUTION.md, la sezione «Esito implementazione» e il «Registro modifiche» di TASK_LIST.md, le date/ore di <code>done</code>, la tabella «Domande contestuali» e ARCHIVE_ENTRY.md, usando i report dell'ecosistema come fonte; poi re-index dal Launcher LIMET.</li>
+</ol>
+
+<h3>2.1 Ciclo (diagramma)</h3>
+<svg class="diag" viewBox="0 0 1000 200">
+  <defs><marker id="a2" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#8b96a8"/></marker></defs>
+  <rect class="box inf" x="10" y="60" width="120" height="56"/><text x="70" y="84" text-anchor="middle" class="t">Analisi</text><text x="70" y="102" text-anchor="middle" class="lbl">analyst → PLAN/SPEC</text>
+  <rect class="box ok" x="150" y="60" width="100" height="56"/><text x="200" y="84" text-anchor="middle" class="t">GATE</text><text x="200" y="102" text-anchor="middle" class="lbl">AskUserQuestion</text>
+  <rect class="box acc" x="270" y="10" width="140" height="56"/><text x="340" y="34" text-anchor="middle" class="t">developer ×N</text><text x="340" y="52" text-anchor="middle" class="lbl">worktree task</text>
+  <rect class="box acc" x="270" y="110" width="140" height="56"/><text x="340" y="134" text-anchor="middle" class="t">tester ×M</text><text x="340" y="152" text-anchor="middle" class="lbl">in parallelo</text>
+  <rect class="box vio" x="440" y="60" width="130" height="56"/><text x="505" y="84" text-anchor="middle" class="t">integrator + runner</text><text x="505" y="102" text-anchor="middle" class="lbl">merge · build · test</text>
+  <rect class="box inf" x="600" y="60" width="130" height="56"/><text x="665" y="84" text-anchor="middle" class="t">reviewer · reader</text><text x="665" y="102" text-anchor="middle" class="lbl">findings · classificazione</text>
+  <rect class="box inf" x="760" y="60" width="110" height="56"/><text x="815" y="84" text-anchor="middle" class="t">validator</text><text x="815" y="102" text-anchor="middle" class="lbl">req ↔ evidenze</text>
+  <rect class="box" x="900" y="60" width="90" height="56"/><text x="945" y="84" text-anchor="middle" class="t">VERIFIED</text><text x="945" y="102" text-anchor="middle" class="lbl">done hh:mm</text>
+  <path class="arr" d="M130,88 L150,88" style="marker-end:url(#a2)"/><path class="arr" d="M250,80 L270,40" style="marker-end:url(#a2)"/><path class="arr" d="M250,96 L270,136" style="marker-end:url(#a2)"/>
+  <path class="arr" d="M410,40 L440,80" style="marker-end:url(#a2)"/><path class="arr" d="M410,136 L440,100" style="marker-end:url(#a2)"/><path class="arr" d="M570,88 L600,88" style="marker-end:url(#a2)"/><path class="arr" d="M730,88 L760,88" style="marker-end:url(#a2)"/><path class="arr" d="M870,88 L900,88" style="marker-end:url(#a2)"/>
+  <path class="arr acc" d="M665,116 L665,185 L340,185 L340,166" style="marker-end:url(#a2)"/><text x="500" y="196" text-anchor="middle" class="lbl">fallimento → task fix (dev o tester) → rebuild → ri-test → ri-validazione + regressione</text>
+</svg>
+
+<h3>2.2 Stati del task (raffinamento compatibile con LIMET §4)</h3>
+<table>
+<tr><th>Stato interno</th><th>In TASK_LIST.md</th><th>Entra quando</th><th>Esce verso</th></tr>
+<tr><td><code>PLANNED</code> / <code>READY</code></td><td>pending</td><td>Piano approvato / dipendenze integrate</td><td><code>ASSIGNED</code></td></tr>
+<tr><td><code>ASSIGNED</code></td><td>in_progress</td><td>Sub-agente lanciato in worktree</td><td><code>DELIVERED</code> · <code>WAITING_SUPERVISOR</code> · <code>FAILED_ATTEMPT</code></td></tr>
+<tr><td><code>WAITING_SUPERVISOR</code></td><td>blocked (motivo = id domanda)</td><td>Risultato <code>blocked</code> con <code>questions[]</code>; commit WIP; slot liberato</td><td><code>READY</code> alla risposta (brief aggiornato); <code>STALE</code> sui task verificati impattati se cambia SPEC/contratto</td></tr>
+<tr><td><code>DELIVERED</code> → <code>BUILDING</code></td><td>in_progress</td><td>dev e test consegnati → integrator fonde su <code>integration/NNNN</code> → runner su sha</td><td><code>TESTED_OK</code> · <code>TESTED_KO</code> · <code>BUILD_ERROR</code> · <code>INFRA_ERROR</code> · <code>MERGE_CONFLICT</code></td></tr>
+<tr><td><code>TESTED_OK</code> → <code>VALIDATING</code></td><td>in_progress</td><td>Tutti i gate meccanici verdi (2.4)</td><td><code>VERIFIED</code> · <code>REJECTED</code> (fix) · <code>UNDETERMINED</code> (test aggiuntivo o Supervisore)</td></tr>
+<tr><td><code>VERIFIED</code></td><td><b>done</b> (<code>YYYY-MM-DD HH:MM</code>)</td><td>Verdetto con evidenze sullo sha corrente</td><td><code>STALE</code> se un merge successivo tocca i suoi file senza ri-test</td></tr>
+<tr><td><code>BLOCKED</code></td><td>blocked</td><td>Tentativi esauriti (3), infra ripetuta, azione umana non-domanda</td><td><code>READY</code> dopo azione umana</td></tr>
+</table>
+<p><b>Invarianti</b>: ogni transizione ha un evento con causa e artefatto; <code>VERIFIED</code> richiede sha del run = sha dell'integrazione; un test non eseguito non è mai PASS; nessun <code>done</code> senza TEST_PLAN compilato o eccezione §5.3 motivata; una domanda non è mai uno stop globale.</p>
+
+<h3>2.3 Scheduler (nel Workflow, funzioni pure)</h3>
+<pre>ready(state)   = task READY con tutte le dipendenze VERIFIED/INTEGRATED
+waves(ready)   = partizione per insiemi di file disgiunti (conflitto dichiarato → serializza o task contract)
+budget         = min(limits.maxAgents, cpuSlots − buildInCorso, costoResiduo / costoMedioTask)
+priorità       = cammino critico desc, rischio asc, stima asc
+blocked(q)     = dipendenti di q ∪ task con file in comune con q           // un WAITING_SUPERVISOR blocca solo questi
+stop           = target raggiunto | budget | ore | 3 cicli senza progresso | tutto dipende da domande aperte
+cap per task   = ≤ 6 file, ≤ 300 righe diff, 1 modulo (plan rifiutato altrimenti → analyst divide)</pre>
+
+<h3>2.4 Gate meccanici di merge (tutti obbligatori, eccezioni solo firmate dall'umano in <code>exceptions.json</code>)</h3>
+<pre>build PASS ∧ test del task PASS (0 NOT_RUN) ∧ regressione mirata PASS ∧ analisi statica 0 errori
+∧ copertura differenziale ≥ soglia ∧ mutation score ≥ soglia (classi nuove) ∧ invarianti meccaniche 0 violazioni
+∧ reviewer 0 findings blocking ∧ sha del run == sha candidato</pre>
+<p class="small">Strumenti dei gate = plugin Maven del progetto (Surefire, JaCoCo, PIT, SpotBugs/PMD) e Playwright: sono la toolchain del progetto target, non componenti dell'ecosistema. La skill runner li esegue e ne legge i report XML/JSON.</p>
+
+<h3>2.5 Scheletro del Workflow <code>.claude/workflows/limet-change.js</code> (struttura, non eseguito)</h3>
+<pre>export const meta = { name: 'limet-change',
+  description: 'Esegue una change LIMET per onde: dev+test in parallelo, runner, review, validazione',
+  phases: [{ title: 'Analisi' }, { title: 'Onda' }, { title: 'Chiusura' }] }
+import * as S from './limet-scheduler.js'            // funzioni pure testate con node --test
+const state = S.load(args.change)                     // limet/changes/NNNN/state.json
+
+phase('Analisi')
+if (!state.plan) {
+  const plan = await agent(S.briefAnalyst(state), { label: 'analyst', phase: 'Analisi', schema: S.PLAN, model: 'opus' })
+  S.applyPlan(state, plan); S.save(state); return { needs: 'approval' }   // l'orchestratore chiede con AskUserQuestion, poi rilancia
+}
+phase('Onda')
+const wave = S.ready(state, S.limits)
+const results = await parallel(wave.map(t => () =>
+  agent(S.brief(t, state), { label: `${t.role}:${t.id}`, phase: 'Onda', schema: S.RESULT, model: S.modelFor(t.role), isolation: 'worktree' })))
+results.forEach(r => S.transition(state, r))          // DELIVERED | WAITING_SUPERVISOR | FAILED_ATTEMPT
+for (const t of S.integrable(state)) {
+  const merged = await agent(S.briefIntegrator(t), { label: `integrator:${t.id}`, schema: S.MERGE, model: 'sonnet' })
+  const run = S.runner('all', merged)                 // la skill runner: script, result.json; invocata dall'orchestratore via Bash
+  S.applyRun(state, t, run)
+  if (run.status === 'PASS') {
+    const [rev, ver] = await parallel([
+      () => agent(S.briefReviewer(t), { label: `reviewer:${t.id}`, schema: S.FINDINGS, model: 'opus' }),
+      () => agent(S.briefValidator(t, run), { label: `validator:${t.id}`, schema: S.VERDICT, model: 'opus' }) ])
+    S.applyGates(state, t, rev, ver)
+  } else {
+    const read = await agent(S.briefReader(run), { label: `reader:${t.id}`, schema: S.READING, model: 'haiku' })
+    S.openFix(state, t, read)
+  }
+}
+S.save(state)                                          // checkpoint atomico + tag git wave/NNNN-k
+return S.summary(state)                                // domande aperte, task per stato, prossima onda, costi</pre>
+<p class="small">Ogni run del Workflow = un'onda (rispetta la linea guida &lt;10 agenti); l'orchestratore rilancia con <code>resumeFromRunId</code> finché <code>S.summary</code> non riporta <code>done</code> o <code>stop</code>. Le domande in <code>summary.questions</code> vengono poste con <code>AskUserQuestion</code> prima della ripresa; gli altri task dell'onda successiva partono comunque.</p>
+
+<h3>2.6 Condizioni di arresto</h3>
+<table>
+<tr><th>Condizione</th><th>Esito dichiarato</th></tr>
+<tr><td>Tutti i task VERIFIED, run finale completo PASS, report prodotto</td><td><code>COMPLETATO</code> → report finali in <code>ecosystem/</code>, richiesta merge umano; la chiusura documentale LIMET (TEST_EXECUTION, esito, archivio, re-index) la fa l'utente con il prompt LIMET</td></tr>
+<tr><td>Nessun task può avanzare e ≥1 in WAITING_SUPERVISOR</td><td><code>IN ATTESA DEL SUPERVISORE</code> (non completato, non errore)</td></tr>
+<tr><td>Budget/ore/tentativi esauriti, infra persistente, 3 cicli senza progresso</td><td><code>INCOMPLETO</code> / <code>BLOCCATO</code> con documento di blocco; mai «completato»</td></tr>
+<tr><td>Operazione distruttiva, merge su ramo protetto, migrazione</td><td>Gate umano con <code>AskUserQuestion</code>; mai autoapprovazione</td></tr>
+</table>
+</section>
+
+<!-- ======================================================================= -->
+<section class="page" data-id="3" data-title="Supervisore e affidabilità">
+<h2>3 · Supervisore umano e affidabilità a scala</h2>
+
+<h3>3.1 Protocollo «fermati e chiedi»</h3>
+<ul>
+  <li><b>Quando</b>: informazione mancante (requisito, interfaccia, dato di test, credenziale), imprecisa o contraddittoria (SPEC vs codice, documenti in conflitto), brief ambiguo, esito non classificabile, necessità di uscire dal perimetro.</li>
+  <li><b>Vietato</b>: assumere, scegliere l'opzione più probabile, placeholder, dichiarare conforme senza evidenza, chiedere senza aver consultato le fonti nell'ordine LIMET §2.4 (Graphify → CEREBRO → dati read-only).</li>
+  <li><b>Non è motivo di fermarsi</b>: scelte interne al perimetro (struttura privata, naming coerente, ordine dei test): si fanno e si documentano.</li>
+  <li><b>Come</b>: commit WIP sul branch del task; risultato <code>{"status":"blocked","questions":[{id, type, question, context[fonti], options[{id,text,consequence}], impact{blocks[],critical_path}}]}</code>; il Workflow porta il task in <code>WAITING_SUPERVISOR</code> e libera lo slot; l'orchestratore pone la domanda con <code>AskUserQuestion</code> (opzioni = quelle dell'agente); la risposta (<code>chi, quando, applies_to: task|change|rule</code>) va in <code>state.json</code>, <code>events.jsonl</code> e in <code>ecosystem/QUESTIONS.md</code>, già nel formato della tabella «Domande contestuali» LIMET (§1.2) così che l'utente la riporti in PLAN/TASK a fine lavoro; se <code>applies_to = change|rule</code> l'orchestratore riusa la risposta per le domande equivalenti e, se la risposta cambia la SPEC, lo segnala al Supervisore: la SPEC la aggiorna l'utente (con il prompt LIMET), poi l'ecosistema riprende.</li>
+  <li><b>Gli altri proseguono</b>: un task in attesa blocca solo i suoi dipendenti e i task con file in comune; lo scheduler continua a riempire gli slot; stop globale solo se nulla può avanzare.</li>
+  <li><b>Assenza del Supervisore</b>: il task resta in attesa senza limite (nessuna assunzione automatica); di notte la sessione lavora finché esistono task indipendenti, poi si ferma in «in attesa del Supervisore». Chi vuole una notte senza interruzioni fornisce SPEC e contratti completi prima del lancio.</li>
+</ul>
+
+<h3>3.2 Affidabilità quando l'ecosistema produce più di quanto il team possa leggere</h3>
+<table>
+<tr><th>Meccanismo</th><th>Realizzazione con LIMET + Claude Code</th></tr>
+<tr><td><b>Task piccoli</b> (prima leva)</td><td>Cap nel scheduler: il piano dell'analyst è rifiutato se un task supera 6 file / 300 righe / 1 modulo</td></tr>
+<tr><td><b>Indipendenza produttore/verificatore</b></td><td>tester e reviewer con modello diverso dal developer (<code>model:</code> nel frontmatter); tester non vede il diff; reviewer vede SPEC + diff, non il brief del dev</td></tr>
+<tr><td><b>Gate meccanici</b> (2.4)</td><td>Skill runner: build, test, mutation, copertura differenziale, statica, invarianti (<code>docs-limet/invariants.md</code> + regole eseguibili); campi <code>gates</code> in <code>state.json</code>; eccezioni solo in <code>exceptions.json</code> firmato</td></tr>
+<tr><td><b>Campione a rischio</b></td><td>Punteggio per task (centralità nel grafo Graphify, aree sensibili, dimensione, findings, tentativi, decisioni autonome, requisiti indeterminati) → sezione «Da leggere oggi» (top-K) nel report; il team legge quelli, non tutto</td></tr>
+<tr><td><b>Report notturno senza LLM</b></td><td>Script nella skill <code>limet-report</code>: da <code>state.json</code>/<code>events.jsonl</code>/<code>runs/</code> genera <code>ecosystem/REPORT_NOTTURNO.md</code> (stati, requisiti, decisioni autonome, domande aperte, qualità, costi, da leggere oggi). Nessun documento LIMET viene toccato</td></tr>
+<tr><td><b>Esecuzione continua</b></td><td>Sessione in <code>--bg</code>; un run di Workflow per onda; checkpoint atomico + tag <code>wave/NNNN-k</code>; ripartenza dal checkpoint; mai merge su <code>main</code> di notte (gate umano al mattino, PR via <code>gh</code> con il report come descrizione)</td></tr>
+<tr><td><b>Protezione risultati validi</b></td><td><code>VERIFIED</code> → <code>STALE</code> se file toccati da onde successive; ri-test mirato; bisect per onde dai tag</td></tr>
+</table>
+<p><b>Cosa resta umano</b>: SPEC/piano e invarianti; risposte alle domande; lettura del campione e del report; merge su ramo protetto, deploy, migrazioni; ambienti, dati di test, credenziali; firma delle eccezioni.</p>
+</section>
+
+<!-- ======================================================================= -->
+<section class="page" data-id="4" data-title="Risorse della sessione (CPU, RAM, disco)">
+<h2>4 · Dimensionamento di una sessione</h2>
+<p class="lead">Per la macchina rilevata (4 core / 8 thread, 15,7 GB RAM, 60,8 GB liberi), con 3 sub-agenti concorrenti e 1 build alla volta. Valori <span class="tag ipotesi">stimati</span> salvo dove indicato; da misurare nel pilota.</p>
+
+<h3>4.1 Memoria e CPU</h3>
+<table>
+<tr><th>Processo</th><th>Istanze</th><th>RAM ciascuno</th><th>CPU</th><th>Totale</th></tr>
+<tr><td>Sessione Claude Code orchestratrice (Node)</td><td>1</td><td>0,4–0,8 GB</td><td>basso</td><td>~0,6 GB</td></tr>
+<tr><td>Sub-agenti del tool Agent</td><td>3</td><td>0,3–0,5 GB</td><td>basso (attesa rete)</td><td>~1,2 GB</td></tr>
+<tr><td>Build Maven + Surefire (JVM test Spring Boot, PIT a fine task)</td><td>1</td><td>1,5–2,5 GB</td><td>2–4 thread per 2–6 min</td><td>~2 GB</td></tr>
+<tr><td>Testcontainers / PostgreSQL (Docker)</td><td>1–2</td><td>0,2–0,3 GB</td><td>basso</td><td>~0,5 GB</td></tr>
+<tr><td>App avviata per e2e (jar) + Chromium headless</td><td>1 + 1</td><td>0,6 + 0,4 GB</td><td>1–2 thread</td><td>~1 GB (solo fase e2e)</td></tr>
+<tr><td>Qdrant + Ollama (idle, embedding a richiesta)</td><td>1 + 1</td><td>0,5 + 0,6 GB</td><td>picchi brevi</td><td>~1,1 GB</td></tr>
+<tr><td>Docker Desktop (VM WSL2 base)</td><td>1</td><td>1–2 GB</td><td>—</td><td>~1,5 GB</td></tr>
+<tr><td><b>Totale in picco</b> (build + e2e + 3 agenti)</td><td></td><td></td><td></td><td><b>~8–9 GB su 15,7</b></td></tr>
+</table>
+<p><b>Conclusione</b>: 3 agenti + 1 build sostenibile; 2 build parallele portano a ~11 GB con contesa CPU: da evitare. <code>limits.json</code> iniziale: <code>maxAgents: 3</code>, <code>maxBuilds: 1</code>, <code>timeoutBuildS: 900</code>.</p>
+
+<h3>4.2 Disco</h3>
+<table>
+<tr><th>Voce</th><th>Stima</th><th>Note</th></tr>
+<tr><td>Repository biblioteca (sorgenti + <code>.git</code>)</td><td>~30 MB</td><td>progetto piccolo</td></tr>
+<tr><td>Worktree concorrenti (3 dev/test + 1 e2e + integrazione) con <code>target/</code> e, per la SPA, <code>node_modules/</code> dei test Playwright</td><td>5 × (30 + 150 + 200) MB ≈ <b>1,9 GB</b></td><td>il tool Agent rimuove i worktree invariati; gli altri si rimuovono dopo il merge</td></tr>
+<tr><td>Repository Maven locale <code>~/.m2</code> (Spring Boot 3, JPA, Flyway, Testcontainers, PIT, JaCoCo, SpotBugs, PMD)</td><td><b>0,8–1,2 GB</b></td><td>una volta; condiviso fra worktree</td></tr>
+<tr><td>Immagini Docker: <code>postgres:16-alpine</code> (~90 MB), Testcontainers <code>ryuk</code> (~15 MB), immagine app (opzionale, ~300 MB)</td><td><b>0,1–0,4 GB</b></td><td>8,09 GB già presenti; 1,86 GB recuperabili con <code>docker system prune</code></td></tr>
+<tr><td>Volumi PostgreSQL (dev + e2e)</td><td>~0,1 GB</td><td></td></tr>
+<tr><td>Playwright: pacchetto + Chromium</td><td><b>~0,4 GB</b></td><td><code>npx playwright install chromium</code></td></tr>
+<tr><td>Evidenze dei run <code>runs/&lt;id&gt;/</code> (log, Surefire XML, JaCoCo, PIT, trace/video e2e on-failure)</td><td>~60 run × 10–25 MB ≈ <b>0,6–1,5 GB</b></td><td>rotazione dopo l'archiviazione</td></tr>
+<tr><td>Graphify <code>graphify-out/</code> (solo worktree di integrazione)</td><td>~20 MB</td><td></td></tr>
+<tr><td>CEREBRO: chunk Qdrant <code>CRB_biblioteca</code> + cache</td><td>~50 MB</td><td></td></tr>
+<tr><td>Sessioni Claude Code (<code>~/.claude/projects</code>, trascrizioni, snapshot shell)</td><td>~0,2–0,5 GB</td><td>trascrizioni lunghe con output di tool</td></tr>
+<tr><td><b>Totale aggiuntivo stimato</b></td><td><b>4,2–7,5 GB</b> (fino a ~9 GB con immagine app e video)</td><td>Margine consigliato ≥ 20 GB liberi; disponibili 60,8 GB <span class="tag fatto">FATTO</span></td></tr>
+</table>
+<p class="small">Raccomandazioni: <code>.gitignore</code> per <code>target/</code>, <code>node_modules/</code>, <code>graphify-out/</code>; <code>docker system prune</code> prima del pilota; cache Maven e npm condivise; trace/video solo on-failure.</p>
+
+<h3>4.3 Rete e porte</h3>
+<ul>
+  <li>API Anthropic: 3–4 connessioni concorrenti; banda trascurabile.</li>
+  <li>Maven Central e registro npm raggiungibili (prima build ~1 GB).</li>
+  <li>Porte: 5432 (PostgreSQL), 8080 (app), 6333, 11434; per e2e porte dedicate per run (8081+).</li>
+</ul>
+</section>
+
+<!-- ======================================================================= -->
+<section class="page" data-id="5" data-title="Scenario: Gestione biblioteca">
+<h2>5 · Scenario di riferimento: «Gestione biblioteca»</h2>
+<p class="lead">Applicazione classica, semplice, per dimensionare costo e tempo. Stack coerente con le policy LIMET osservate (Maven, <code>./mvnw test -Dtest=…</code>) e con il mandato (DB su Docker, SPA molto semplice).</p>
+
+<h3>5.1 Stack e perimetro</h3>
+<table>
+<tr><th>Livello</th><th>Scelta</th><th>Motivo</th></tr>
+<tr><td>Backend</td><td>Java 17, Spring Boot 3 (Web, Data JPA, Validation), Flyway, Maven Wrapper</td><td>Stack Maven delle policy; Surefire/JaCoCo/PIT/SpotBugs come plugin</td></tr>
+<tr><td>Database</td><td>PostgreSQL 16 in <code>docker-compose.yml</code>; Testcontainers nei test di integrazione</td><td>Mandato; isolamento per run</td></tr>
+<tr><td>Frontend</td><td>SPA statica HTML + JavaScript vanilla (nessun framework, nessun build) servita da Spring (<code>/static</code>); fetch verso REST</td><td>«Molto semplice»; Playwright per e2e</td></tr>
+<tr><td>Contratto</td><td><code>openapi.yaml</code> scritto nel task contract; validato nei test controller</td><td>Gate contratti</td></tr>
+<tr><td>Dominio</td><td>Libro, Autore, Lettore, Prestito</td><td>4 entità, 6 casi d'uso</td></tr>
+</table>
+
+<h3>5.2 Requisiti (estratto SPEC, R1–R8)</h3>
+<table>
+<tr><th>ID</th><th>Requisito</th><th>Scenari chiave (dato/quando/allora)</th></tr>
+<tr><td>R1</td><td>CRUD Libri (titolo, ISBN univoco, anno, copie totali) e Autori</td><td>ISBN duplicato → 409; copie &lt; 0 → 400</td></tr>
+<tr><td>R2</td><td>Ricerca libri per titolo/autore/ISBN con paginazione</td><td>Query vuota → prima pagina; nessun risultato → lista vuota 200</td></tr>
+<tr><td>R3</td><td>Registrazione Lettori (email univoca)</td><td>Email duplicata → 409</td></tr>
+<tr><td>R4</td><td>Prestito: copia disponibile; max 3 prestiti attivi; durata 30 giorni</td><td>Nessuna copia → 409; quarto prestito → 409; copie disponibili decrementano</td></tr>
+<tr><td>R5</td><td>Restituzione: chiude il prestito, ripristina la copia, calcola i giorni di ritardo</td><td>Restituzione doppia → 409; ritardo = max(0, oggi − scadenza)</td></tr>
+<tr><td>R6</td><td>Elenco prestiti in ritardo</td><td>Solo attivi con scadenza &lt; oggi, ordinati per ritardo</td></tr>
+<tr><td>R7</td><td>SPA: pagine Libri (lista, ricerca, nuovo), Lettori, Prestiti (nuovo, restituisci), Ritardi</td><td>Errori API mostrati; form validati</td></tr>
+<tr><td>R8 (NFR)</td><td>Avvio con <code>docker compose up</code> + <code>./mvnw spring-boot:run</code>; migrazioni automatiche; nessuna query senza paginazione (invariante)</td><td>Health-check 200 entro 60 s</td></tr>
+</table>
+
+<h3>5.3 Grafo dei task (prodotto dall'analyst, entro il cap)</h3>
+<table>
+<tr><th>ID</th><th>Tipo</th><th>Titolo</th><th>Dipende da</th><th>Req.</th><th>Stima</th></tr>
+<tr><td>T0</td><td>contract</td><td>Scaffold: <code>pom.xml</code> (plugin qualità), compose, Flyway V1 (4 tabelle), <code>openapi.yaml</code>, convenzioni, invarianti</td><td>—</td><td>R8</td><td>M</td></tr>
+<tr><td>T1</td><td>dev</td><td>Entità + repository Libro/Autore</td><td>T0</td><td>R1</td><td>S</td></tr>
+<tr><td>T2</td><td>dev</td><td>Entità + repository Lettore, Prestito</td><td>T0</td><td>R3, R4</td><td>S</td></tr>
+<tr><td>T3</td><td>dev</td><td>Service Libri/Autori + ricerca paginata</td><td>T1</td><td>R1, R2</td><td>M</td></tr>
+<tr><td>T4</td><td>dev</td><td>Service Prestiti (max 3, 30 gg, disponibilità, restituzione, ritardi)</td><td>T1, T2</td><td>R4–R6</td><td>M</td></tr>
+<tr><td>T5</td><td>dev</td><td>Controller REST Libri/Autori/Ricerca + errori 409/400</td><td>T3</td><td>R1, R2</td><td>M</td></tr>
+<tr><td>T6</td><td>dev</td><td>Controller REST Lettori/Prestiti/Ritardi</td><td>T4</td><td>R3–R6</td><td>M</td></tr>
+<tr><td>T7</td><td>dev</td><td>SPA: shell, client API, pagina Libri</td><td>T0 (OpenAPI)</td><td>R7</td><td>M</td></tr>
+<tr><td>T8</td><td>dev</td><td>SPA: pagine Lettori, Prestiti, Ritardi</td><td>T7</td><td>R7</td><td>M</td></tr>
+<tr><td>T9</td><td>integration</td><td>Test di integrazione Testcontainers (flussi R4/R5 con pre/post stato SQL)</td><td>T5, T6</td><td>R4–R6</td><td>M</td></tr>
+<tr><td>T10</td><td>e2e</td><td>Casi Playwright: nuovo libro, prestito, restituzione, ritardi, errori</td><td>T8, T9</td><td>R7</td><td>M</td></tr>
+<tr><td>T1t…T8t</td><td>test</td><td>Unit test per ciascun task dev (in parallelo al dev)</td><td>come il dev</td><td>—</td><td>S/M</td></tr>
+</table>
+<p class="small">Onde con 3 agenti: 1: T0 · 2: T1, T1t, T2 (poi T2t, T7, T7t) · 3: T3, T3t, T4 · 4: T4t, T5, T5t · 5: T6, T6t, T8 · 6: T8t, T9 · 7: T10. Circa 20 unità di lavoro più review e validazione per ciascuna. Codice atteso: ~25 classi Java, ~15 classi di test, ~8 file SPA, 2 config, ~3 spec Playwright.</p>
+</section>
+
+<!-- ======================================================================= -->
+<section class="page" data-id="6" data-title="Scenario di costo">
+<h2>6 · Scenario di costo</h2>
+<p class="lead">Token e costo API per realizzare la biblioteca. Prezzi: listino API Anthropic (riferimento <code>claude-api</code>, cache 2026-10-06). <b>Con abbonamento Claude Code (Pro/Max) il consumo è conteggiato diversamente e non è stato verificato</b>: la stima vale per uso a consumo.</p>
+
+<h3>6.1 Listino usato (USD per milione di token)</h3>
+<table>
+<tr><th>Modello</th><th>ID</th><th>Input</th><th>Output</th><th>Lettura cache</th><th>Ruoli</th></tr>
+<tr><td>Claude Opus 5.5</td><td><code>claude-opus-5-5</code></td><td>4,00</td><td>20,00</td><td>0,20</td><td>orchestratore, analyst, reviewer, validator</td></tr>
+<tr><td>Claude Sonnet 5.5</td><td><code>claude-sonnet-5-5</code></td><td>2,00</td><td>10,00</td><td>0,20</td><td>developer, tester, integrator, e2e-designer</td></tr>
+<tr><td>Claude Haiku 5.5</td><td><code>claude-haiku-5-5</code></td><td>0,10</td><td>0,50</td><td>~0,01 <span class="tag ipotesi"></span></td><td>test-reader, e2e-reader</td></tr>
+<tr><td>Claude Fable 5.1</td><td><code>claude-fable-5-1</code></td><td>10,00</td><td>50,00</td><td>0,25</td><td>variante D per i ruoli di giudizio</td></tr>
+</table>
+<p class="small">Scrittura in cache: non nella tabella di riferimento; <b>assunta 1,25× il prezzo input</b> sui token freschi <span class="tag verif">DA VERIFICARE</span>. Lettura cache Haiku: ipotesi prudente.</p>
+
+<h3>6.2 Modello di consumo per ruolo</h3>
+<p>Per esecuzione di un sub-agente: input fresco (brief, file letti, risultati tool), lettura cache (prompt di sistema, AGENTS.md, documenti LIMET, cronologia riletta a ogni turno), output (codice, documenti, JSON). Esecuzioni = task × fattore tentativi (dev 1,4; test 1,3; review 1,2).</p>
+<table>
+<tr><th>Ruolo</th><th>Esecuzioni</th><th>Input fresco / esec.</th><th>Lettura cache / esec.</th><th>Output / esec.</th></tr>
+<tr><td>Orchestratore (sessione, intera change)</td><td>1</td><td>400k</td><td>3.000k</td><td>60k</td></tr>
+<tr><td>analyst (+ avversario)</td><td>2</td><td>120k</td><td>300k</td><td>15k</td></tr>
+<tr><td>developer</td><td>15,4</td><td>60k</td><td>400k</td><td>12k</td></tr>
+<tr><td>tester</td><td>14,3</td><td>50k</td><td>300k</td><td>10k</td></tr>
+<tr><td>reviewer</td><td>13,2</td><td>40k</td><td>150k</td><td>4k</td></tr>
+<tr><td>integrator</td><td>11</td><td>20k</td><td>100k</td><td>3k</td></tr>
+<tr><td>test-reader</td><td>14</td><td>20k</td><td>60k</td><td>4k</td></tr>
+<tr><td>validator (+ finale)</td><td>12</td><td>40k</td><td>120k</td><td>5k</td></tr>
+<tr><td>e2e-designer</td><td>2</td><td>100k</td><td>400k</td><td>15k</td></tr>
+<tr><td>e2e-reader</td><td>3</td><td>20k</td><td>60k</td><td>3k</td></tr>
+<tr><td><b>Totale</b></td><td>~88</td><td><b>4,05 M</b></td><td><b>20,4 M</b></td><td><b>0,66 M</b></td></tr>
+</table>
+
+<h3>6.3 Costo per profilo di modelli</h3>
+<table>
+<tr><th>Profilo</th><th>Assegnazione</th><th>Costo stimato</th><th>Ripartizione principale (USD)</th></tr>
+<tr><td><b>A · Misto (consigliato)</b></td><td>Opus 5.5 per orchestratore/analyst/reviewer/validator; Sonnet 5.5 per dev/test/integrator/e2e-designer; Haiku 5.5 per i lettori</td><td><b>≈ 25</b></td><td>developer 5,4 · reviewer 4,1 · tester 4,1 · validator 3,9 · orchestratore 3,8 · analyst 1,9 · integrator 1,1 · e2e 1,0</td></tr>
+<tr><td>B · Tutto Opus 5.5</td><td>Qualità massima uniforme</td><td>≈ 38</td><td>developer 9,6 · tester 7,3</td></tr>
+<tr><td>C · Tutto Sonnet 5.5</td><td>Costo minimo</td><td>≈ 21</td><td>Perde l'indipendenza di modello fra developer e reviewer: sconsigliato</td></tr>
+<tr><td>D · Fable 5.1 per il giudizio</td><td>Fable 5.1 per orchestratore/analyst/reviewer/validator; resto come A</td><td>≈ 44</td><td>reviewer 9,7 · validator 9,4 · orchestratore 8,8</td></tr>
+</table>
+<p><b>Intervallo realistico: 20–45 USD per la change completa</b>, incertezza ±50% (tentativi effettivi, lunghezza della cronologia riletta: 20 M token di cache è il fattore dominante; log tenuti fuori dal contesto dalla skill runner; le attese del Supervisore non costano token). Sensibilità: +1 tentativo medio per task dev ≈ +3 USD (profilo A); orchestratore che rilegge <code>state.json</code> intero invece di estratti ≈ +12 USD.</p>
+
+<h3>6.4 Costi non API</h3>
+<table>
+<tr><th>Voce</th><th>Stima</th></tr>
+<tr><td>Supervisore: approvazione piano, ~6–10 domande, lettura campione a rischio, merge</td><td>1,5–3 ore persona</td></tr>
+<tr><td>Tempo di parete (3 agenti + 1 build; build+test 3–5 min; mutation 2–4 min per task)</td><td>6–10 ore (una notte, se le domande prevedibili sono risposte prima)</td></tr>
+<tr><td>Setup una tantum (cap. 7: Playwright, plugin qualità nel pom, registrazione CEREBRO, agenti, skill, workflow)</td><td>0,5–1 giornata persona + ~2 USD di prove</td></tr>
+</table>
+<p class="small">Confronto: uno sviluppatore che realizza lo stesso perimetro con test, e2e e documentazione LIMET impiega indicativamente 3–5 giornate. L'ecosistema lo produce in una notte per 20–45 USD più 2–4 ore di supervisione; il valore sta nel tempo di parete e nella tracciabilità (ogni requisito con evidenze), la qualità dipende dai gate meccanici attivi.</p>
+</section>
+
+<!-- ======================================================================= -->
+<section class="page" data-id="7" data-title="Artefatti, prerequisiti, rischi, verdetto">
+<h2>7 · Artefatti da creare, prerequisiti, rischi, verdetto</h2>
+
+<h3>7.1 Artefatti — nessuno esiste oggi</h3>
+<p><b>Chi li crea e come si distribuiscono.</b> Il team li realizza una volta in una fase pilota, usando Claude Code in sessione normale e il ciclo LIMET (PLAN, TASK_LIST, TEST_PLAN, TEST_EXECUTION del pilota), e li verifica con gli scenari 7.4. Vengono impacchettati come <b>plugin Claude Code</b> (cartella <code>limet-agents/</code> con <code>agents/</code>, <code>workflows/</code>, <code>skills/</code>, impostazioni; esterna a LIMET) e installati in ogni progetto dopo <code>limet.ps1 init</code> con uno script <code>limet-agents.ps1 init</code> (modello <code>limet.ps1</code>) che scrive in <code>.claude/settings.json</code> del progetto il riferimento al plugin e copia i file di configurazione dagli esempi; in alternativa <code>claude --plugin-dir &lt;cartella&gt;</code> per sessione, o copia di <code>.claude/</code>. Per progetto si personalizza solo <code>limits.json</code>, <code>runner.config.json</code>, <code>.mcp.json</code> e i documenti in <code>docs-limet/</code> (convenzioni, invarianti).</p>
+<table>
+<tr><th>#</th><th>Artefatto</th><th>Percorso</th><th>Contenuto</th></tr>
+<tr><td>1</td><td>Installazione LIMET</td><td><code>limet/</code>, <code>AGENTS.md</code>, <code>CLAUDE.md</code></td><td><code>limet.ps1 init -ProjectPath … -Lang it</code>; poi <code>limet-index init</code> (CEREBRO + Graphify)</td></tr>
+<tr><td>2</td><td>Definizioni agente</td><td><code>.claude/agents/{analyst,developer,tester,reviewer,integrator,test-reader,validator,e2e-designer,e2e-reader}.md</code> + <code>_common.md</code></td><td>Frontmatter <code>name/description/model/tools</code>; corpo = regole LIMET del ruolo + regola «fermati e chiedi» + formato JSON di output</td></tr>
+<tr><td>3</td><td>Workflow</td><td><code>.claude/workflows/limet-change.js</code> + <code>limet-scheduler.js</code> (+ test <code>node --test</code>)</td><td>Struttura 2.5; funzioni pure 2.3; schemi dei risultati (plan, result, findings, verdict, reading, merge)</td></tr>
+<tr><td>4</td><td>Skill runner</td><td><code>.claude/skills/limet-runner/SKILL.md</code> + <code>run.ps1</code>/<code>run.sh</code> + <code>runner.config.json</code></td><td>Comandi <code>build | test --select | lint | mutation | coverage-diff | e2e | all</code>; verifica sha e worktree pulito; parsing Surefire/JaCoCo/PIT/Playwright → <code>result.json</code>; log su disco; redazione segreti; distinzione <code>INFRA_ERROR</code></td></tr>
+<tr><td>5</td><td>Skill report</td><td><code>.claude/skills/limet-report/</code></td><td>Script che genera <code>REPORT_NOTTURNO.md</code> e <code>REPORT_CONFORMITA.md</code> (sezione evidenze) da state/events/runs; scoring del rischio e «Da leggere oggi»</td></tr>
+<tr><td>6</td><td>Permessi e hook</td><td><code>.claude/settings.json</code></td><td><code>permissions.deny</code>: <code>Bash(./mvnw*)</code>, <code>Bash(git push*)</code>, <code>Bash(git merge*)</code> salvo integrator; hook <code>PreToolUse</code> che logga ogni tool call in <code>events.jsonl</code>; hook <code>UserPromptSubmit</code> con <code>limet_rag.py</code> (App. A)</td></tr>
+<tr><td>7</td><td>MCP</td><td><code>.mcp.json</code></td><td><code>limet_search</code> (<code>C:\software\cerebro\scripts\limet_mcp.py</code>), server DB read-only PostgreSQL</td></tr>
+<tr><td>0</td><td>Input: documenti LIMET della change</td><td><code>limet/changes/NNNN/{PLAN,SPEC,TASK_LIST,TEST_PLAN,E2E_VERIFICATION}.md</code></td><td>Scritti e approvati dall'utente con il consueto prompt LIMET prima di avviare l'ecosistema; letti in sola lettura dagli agenti</td></tr>
+<tr><td>8</td><td>Stato e limiti</td><td><code>limet/changes/NNNN/ecosystem/{state.json,events.jsonl,exceptions.json,QUESTIONS.md,REPORT_*.md}</code>, <code>limits.json</code></td><td>Schema stati 2.2; <code>maxAgents 3</code>, <code>maxBuilds 1</code>, <code>maxAttempts 3</code>, budget, ore notturne, cap task</td></tr>
+<tr><td>9</td><td>Documenti LIMET aggiuntivi</td><td><code>docs-limet/{conventions.md, invariants.md, ci/}</code></td><td>Invarianti umani + versione eseguibile per il runner</td></tr>
+<tr><td>11</td><td>Script di installazione del plugin</td><td><code>limet-agents.ps1</code> / <code>.sh</code> (<code>init</code>/<code>update</code>)</td><td>Esegue <code>claude plugin marketplace add &lt;cartella&gt; --scope project</code> e <code>claude plugin install limet-agents@limet-agents --scope project</code> (il riferimento finisce automaticamente in <code>.claude/settings.json</code> del progetto, scritto da Claude Code), copia <code>limits.json</code>, <code>runner.config.json</code>, <code>.mcp.json</code> dagli esempi senza sovrascrivere quelli esistenti; idempotente come <code>limet.ps1</code></td></tr>
+<tr><td>10</td><td>Scaffold e2e</td><td><code>e2e/</code> (Playwright config, page-object, fixtures)</td><td>Toolchain di test del progetto</td></tr>
+</table>
+
+<h3>7.2 Prerequisiti</h3>
+<table>
+<tr><th>#</th><th>Azione</th><th>Comando / verifica</th><th>Stato</th></tr>
+<tr><td>1</td><td>Correggere il puntatore CEREBRO e indicizzare LIMET</td><td><code>CEREBRO_HOME=C:\software\cerebro</code>; in <code>CLAUDE.md</code>/<code>copilot-instructions.md</code> sostituire <code>C:\Progetti\CEREBRO</code>; <code>register_project.py add limet --docs C:\Progetti\VSC\LIMET\it --root C:\Progetti\VSC\LIMET</code>; <code>ingest_docs.py --project limet</code></td><td><span class="tag manca">DA FARE</span></td></tr>
+<tr><td>2</td><td>JDK 17+ per Spring Boot 3</td><td><code>sdk list java</code>; <code>java -version</code></td><td><span class="tag verif">DA VERIFICARE</span> (oggi JDK 11)</td></tr>
+<tr><td>3</td><td>Playwright + Chrome (per Claude in Chrome)</td><td><code>npm i -D @playwright/test &amp;&amp; npx playwright install chromium</code>; installare Chrome</td><td><span class="tag manca">DA FARE</span></td></tr>
+<tr><td>4</td><td>Prova del tool Workflow con <code>.claude/workflows/</code> e di Agent con worktree su repo sandbox</td><td>2 agenti in <code>parallel</code> con schema; verificare nome branch/worktree e merge su <code>integration/*</code>; verificare <code>resumeFromRunId</code></td><td><span class="tag verif">DA VERIFICARE</span></td></tr>
+<tr><td>5</td><td>Skill runner Maven con PIT, JaCoCo, SpotBugs/PMD; misura tempi</td><td><code>./mvnw -q verify</code> eseguito <b>dall'utente</b> (policy LIMET) e tempi riportati</td><td><span class="tag verif">DA VERIFICARE</span></td></tr>
+<tr><td>6</td><td>Modifiche documentali a LIMET (7.3)</td><td>Change LIMET con PLAN/TASK_LIST/TEST_PLAN; <code>limet.ps1 update</code> su progetto di prova; <code>grep -c 'LIMET:START' AGENTS.md</code> = 1</td><td><span class="tag manca">DA FARE</span></td></tr>
+<tr><td>7</td><td>Pulizia disco</td><td><code>docker system prune</code> (1,86 GB)</td><td>Opzionale</td></tr>
+</table>
+
+<h3>7.3 Modifiche preliminari a LIMET (documentali)</h3>
+<table>
+<tr><th>#</th><th>Modifica</th><th>File LIMET</th><th>Perché</th></tr>
+<tr><td>M.1</td><td>§1.3: «l'esecuzione di build/test resta all'utente, alla pipeline <b>o a un esecutore deterministico non LLM (skill runner) invocato per conto dell'utente</b>, che produce un report strutturato e tiene i log fuori dal contesto»; stessa riga nel blocco <code>AGENTS.md</code> di <code>limet.ps1/.sh</code>, nella checklist §4 e in TEST_PLAN «Chi esegue»</td><td>Manuale IT/EN, script, checklist, template</td><td>Senza, il ciclo autonomo viola una regola scritta</td></tr>
+<tr><td>M.2</td><td>§3 fase 2 e blocco AGENTS.md: un orchestratore può eseguire una change solo se PLAN (approvato con chi + data), SPEC, TASK_LIST e TEST_PLAN esistono già; non crea né modifica documenti LIMET; merge su rami protetti, migrazioni e operazioni distruttive con approvazione separata</td><td>Manuale, script</td><td>Formalizza il gate umano</td></tr>
+<tr><td>M.3</td><td>Nuova Appendice D «Esecuzione multi-agente»: ID (<code>NNNN-slug</code>, <code>R&lt;n&gt;</code>, <code>T&lt;n&gt;</code>, <code>T&lt;n&gt;t</code>, <code>r-NNNN</code>); sottocartella <code>limet/changes/NNNN/ecosystem/</code> riservata agli artefatti dell'ecosistema (indicizzabile); stati interni ammessi (2.2) purché mappati ai quattro stati §4; chiusura documentale LIMET fatta dall'utente a partire da <code>REPORT_FINALE.md</code></td><td>Manuale</td><td>Tracciabilità calcolabile, non solo leggibile</td></tr>
+<tr><td>M.4</td><td>Template: <code>QUESTION_TEMPLATE.md</code> e colonna <code>vale_per</code> nelle «Domande contestuali» (§1.2); sezione NFR in SPEC; <code>INVARIANTS_TEMPLATE.md</code>; <code>CONFORMITY_REPORT_TEMPLATE.md</code>; E2E_VERIFICATION con sezione «script automatizzato» e trace come evidenza; §5.1 cita mutation testing come attuazione eseguibile del «sabotaggio mentale»</td><td>Template IT/EN, manuale §5</td><td>Rende i gate e il protocollo domande parte del metodo</td></tr>
+<tr><td>M.5</td><td>Puntatore CEREBRO corretto in <code>CLAUDE.md</code> e <code>.github/copilot-instructions.md</code>; LIMET indicizzato (<code>CRB_limet</code>)</td><td><code>CLAUDE.md</code></td><td>Oggi il comando RAG fallisce</td></tr>
+</table>
+
+<h3>7.4 Piano di validazione (scenari, nessuno eseguito)</h3>
+<table>
+<tr><th>ID</th><th>Scenario</th><th>Criterio oggettivo</th></tr>
+<tr><td>V1</td><td>3 task indipendenti in parallelo</td><td>3 <code>task.assigned</code> entro 60 s in <code>events.jsonl</code>; 3 worktree; nessun conflitto; 3 verdetti con sha</td></tr>
+<tr><td>V2</td><td>Dipendenza T2 ← T1</td><td><code>T2.assigned</code> &gt; <code>T1.integrated</code>; test dello scheduler</td></tr>
+<tr><td>V3</td><td>Errore di compilazione indotto</td><td><code>BUILD_ERROR</code>; fix al developer; <code>attempts = 2</code>; nessun test PASS nel run fallito</td></tr>
+<tr><td>V4</td><td>Test fallito: difetto applicativo vs difetto del test</td><td>Classificazione corretta del test-reader; fix al ruolo giusto</td></tr>
+<tr><td>V5</td><td>Bug fix (App. B.3 LIMET)</td><td>Test di regressione FAIL poi PASS su sha diversi</td></tr>
+<tr><td>V6</td><td>Conflitto di integrazione</td><td><code>MERGE_CONFLICT</code>, decisione registrata, build successiva PASS</td></tr>
+<tr><td>V7</td><td>Regressione: task B tocca file di A verificato</td><td><code>VERIFIED → STALE → VERIFIED</code></td></tr>
+<tr><td>V8</td><td>Permessi: brief chiede <code>./mvnw test</code> e <code>git push</code></td><td>Tool negati; remoto invariato</td></tr>
+<tr><td>V9</td><td>Supervisore: T4 si ferma per dato mancante, T2/T3 proseguono</td><td>Nessuno stop globale; domanda con fonti e opzioni posta via AskUserQuestion; T4 riparte dal WIP; domanda equivalente non ripresentata</td></tr>
+<tr><td>V10</td><td>Mutation gate su test tautologico</td><td>Score sotto soglia al primo run, sopra al secondo; nessun merge fra i due</td></tr>
+<tr><td>V11</td><td>Notte simulata (10 task, budget esaurito all'ottavo)</td><td>Stato INCOMPLETO dichiarato; report notturno con «Da leggere oggi»; ripresa dal checkpoint</td></tr>
+<tr><td>V12</td><td>E2E Playwright su app locale (3 casi, 1 FAIL indotto)</td><td>trace per il FAIL; pre/post stato; classificazione corretta</td></tr>
+</table>
+
+<h3>7.5 Rischi</h3>
+<table>
+<tr><th>Rischio</th><th>Prob.</th><th>Impatto</th><th>Mitigazione</th></tr>
+<tr><td>Agente esegue build/test o push nonostante le istruzioni</td><td>Media</td><td>Alto</td><td>Permessi a livello di tool, non solo prompt; hook PreToolUse; V8 a ogni release</td></tr>
+<tr><td>Test che confermano l'implementazione, verdetti «conformi» testuali</td><td>Alta</td><td>Alto</td><td>Tester senza diff; reviewer con modello diverso; mutation gate; verdetto solo con <code>evidence[]</code>; <code>UNDETERMINED</code> di default</td></tr>
+<tr><td>Contesto dell'orchestratore cresce fino alla compattazione</td><td>Alta</td><td>Medio</td><td><code>state.json</code> è la verità; l'orchestratore legge <code>S.summary</code>, mai log; checkpoint e resume</td></tr>
+<tr><td>Limite di agenti per run del Workflow; opt-in da ripetere</td><td>Alta</td><td>Basso</td><td>Un run per onda; <code>resumeFromRunId</code>; l'utente abilita il workflow una volta per sessione</td></tr>
+<tr><td>Worktree del tool Agent con nomi non controllabili</td><td>Media</td><td>Medio</td><td>Prerequisito 7.2-4; in alternativa worktree creato dall'orchestratore (<code>git worktree add</code>) e passato con <code>--add-dir</code></td></tr>
+<tr><td>Risorse macchina (RAM/CPU) con build + Docker + Ollama</td><td>Alta</td><td>Medio</td><td><code>maxBuilds 1</code>; <code>effort</code> basso per lettori; misura nel pilota</td></tr>
+<tr><td>Costo dominato dalla rilettura di cache (20 M token)</td><td>Alta</td><td>Medio</td><td>Brief compatti; prompt stabili in testa; modelli piccoli per lettura; <code>effort: low</code> dove basta</td></tr>
+<tr><td>Supervisore assente di notte</td><td>Media</td><td>Medio</td><td>SPEC e OpenAPI completi prima; stop controllato «in attesa del Supervisore»</td></tr>
+<tr><td>Mutation testing lento</td><td>Alta</td><td>Medio</td><td>PIT solo sulle classi del task; se supera il tempo, gate degradato a copertura differenziale con evento esplicito</td></tr>
+<tr><td>Abbonamento anziché API: limiti di utilizzo non noti</td><td>Media</td><td>Medio</td><td>Verificare il piano; misurare nel pilota; <code>--max-budget-usd</code> in <code>-p</code></td></tr>
+<tr><td>Il team si fida dei gate e non legge il campione</td><td>Media</td><td>Alto</td><td>«Da leggere oggi» con spunta obbligatoria prima del merge umano; eccezioni firmate</td></tr>
+</table>
+
+<h3>7.6 Verdetto</h3>
+<div class="verdict"><div class="big">FATTIBILE con sola LIMET + Claude Code, dopo le modifiche documentali M.1–M.5</div><div class="small">Tutti i primitivi necessari sono nativi di Claude Code 2.1.311 (Agent con worktree, Workflow in <code>.claude/workflows</code>, skill con script, AskUserQuestion, permessi, hook, MCP, Claude in Chrome). LIMET fornisce metodo, template, stati, tracciabilità e strumenti di contesto (CEREBRO in <code>C:\software\cerebro</code>, Graphify). Nessun repository esterno né tecnologia terza oltre alla toolchain di test del progetto. Scenario biblioteca: 20–45 USD, 6–10 ore di parete, 2–4 ore di supervisione, 4–9 GB di disco su 60,8 liberi, ~8–9 GB RAM in picco su 15,7.</div></div>
+<p class="small">Distinzione obbligatoria: tutto il documento è <b>architettura proposta e stima</b>; nessun workflow, agente, skill, build o test è stato eseguito. I numeri di costo sono un modello parametrico (6.2) da ricalibrare dopo il primo pilota con l'uso reale.</p>
+</section>
+
+<!-- ======================================================================= -->
+<section class="page" data-id="Z" data-title="Glossario in parole semplici">
+<h2>Z · Glossario in parole semplici</h2>
+<table>
+<tr><th>Termine</th><th>Significato</th><th>Esempio concreto</th></tr>
+<tr><td><b>Sessione Claude Code</b></td><td>Il programma <code>claude</code> aperto in un terminale dentro la cartella del progetto. Qui vive l'orchestratore.</td><td><code>cd C:\Progetti\biblioteca &amp;&amp; claude</code></td></tr>
+<tr><td><b>Orchestratore</b></td><td>La sessione principale: coordina, non scrive codice. Segue la ricetta del workflow.</td><td>«Lancio developer e tester per T4; quando consegnano chiamo il runner»</td></tr>
+<tr><td><b>Sub-agente (tool Agent)</b></td><td>Un Claude separato, lanciato dall'orchestratore per un singolo compito, con istruzioni e strumenti limitati. Finito il compito, sparisce.</td><td>Il <code>developer</code> che implementa <code>PrestitoService</code></td></tr>
+<tr><td><b>Definizione di agente</b></td><td>Un file Markdown in <code>.claude/agents/</code> che descrive un mestiere: nome, modello, strumenti permessi, istruzioni.</td><td><code>.claude/agents/tester.md</code></td></tr>
+<tr><td><b>Workflow (tool Workflow)</b></td><td>Uno script JavaScript, salvato in <code>.claude/workflows/</code>, che l'orchestratore esegue per lanciare agenti in un ordine preciso e raccogliere i risultati. È codice: fa sempre la stessa cosa.</td><td><code>limet-change.js</code>: «onda → integra → runner → review → verdetto»</td></tr>
+<tr><td><b>Scheduler</b></td><td>La parte del workflow che decide quali task possono partire adesso e quanti agenti lanciare.</td><td>«T4 e T7 non si toccano: partono insieme; T6 aspetta T4»</td></tr>
+<tr><td><b>Worktree</b></td><td>Una copia separata della cartella del progetto, collegata allo stesso repository git ma su un ramo diverso. Ogni agente lavora nella sua.</td><td><code>C:\Progetti\wt-0002-T4</code> sul ramo <code>task/0002-T4</code></td></tr>
+<tr><td><b>Branch di integrazione</b></td><td>Il ramo git dove vengono uniti i lavori dei task man mano che passano i controlli. Non è il ramo principale.</td><td><code>integration/0002</code>; il merge su <code>main</code> lo fai tu</td></tr>
+<tr><td><b>Skill</b></td><td>Una capacità aggiuntiva di Claude Code definita in <code>.claude/skills/</code>, che può includere script. Qui usata per il runner e per i report.</td><td><code>.claude/skills/limet-runner/run.ps1</code></td></tr>
+<tr><td><b>Runner</b></td><td>Lo script che compila, esegue i test e produce un riepilogo JSON. Non è un'IA.</td><td><code>runner all --sha 7f3a9c1</code> → <code>result.json</code></td></tr>
+<tr><td><b>Hook</b></td><td>Un comando che Claude Code esegue automaticamente a certi eventi (inizio sessione, prima di un tool…). Usato per registrare e per bloccare.</td><td><code>PreToolUse</code> che scrive ogni comando in <code>events.jsonl</code></td></tr>
+<tr><td><b>Permessi (settings.json)</b></td><td>L'elenco di cosa un agente può o non può fare, applicato dal programma e non dal prompt.</td><td><code>"deny": ["Bash(git push*)"]</code></td></tr>
+<tr><td><b>MCP</b></td><td>Un modo standard per dare a Claude accesso a servizi esterni come «strumenti». Qui: ricerca documenti (CEREBRO) e database in sola lettura.</td><td><code>limet_search "regole prestito"</code></td></tr>
+<tr><td><b>AskUserQuestion</b></td><td>Il modo con cui l'orchestratore ti fa una domanda a scelta multipla in sessione. È il canale del Supervisore.</td><td>«Approvi il piano? ○ Sì ○ No»</td></tr>
+<tr><td><b>Supervisore</b></td><td>Tu (o un collega del team) in sessione: l'unica persona che risponde alle domande degli agenti e approva.</td><td>Rispondi a Q3 scegliendo l'opzione B</td></tr>
+<tr><td><b>Brief</b></td><td>Le istruzioni complete che l'orchestratore dà a un agente per un task: cosa fare, requisiti, criteri, file attesi, risposte già date.</td><td><code>briefs/T4.json</code></td></tr>
+<tr><td><b>Risultato strutturato</b></td><td>La risposta di un agente in formato JSON fisso, controllata da uno schema. Se non rispetta lo schema, è rifiutata.</td><td><code>{"status":"delivered","sha":"…","files":[…]}</code></td></tr>
+<tr><td><b>Domanda contestuale</b></td><td>Termine LIMET (§1.2): un dubbio registrato per iscritto con risposta, data e chi ha risposto, invece di un'assunzione silenziosa. L'ecosistema la salva in <code>ecosystem/QUESTIONS.md</code>; tu la riporti in PLAN.md alla chiusura.</td><td>«Q3 · ritardi bloccano? · B · 2026-10-27 · M.S.»</td></tr>
+<tr><td><b>Cartella <code>ecosystem/</code></b></td><td>Sottocartella di <code>limet/changes/NNNN/</code> riservata ai file prodotti dagli agenti. I documenti LIMET stanno fuori e non vengono toccati.</td><td><code>limet/changes/0002-prestiti/ecosystem/state.json</code></td></tr>
+<tr><td><b>Gate</b></td><td>Un controllo che deve essere superato prima di passare oltre. Alcuni sono umani (approvazione piano, merge), la maggior parte meccanici (build, test, mutation…).</td><td>«Nessun merge se la copertura delle righe nuove è sotto 80%»</td></tr>
+<tr><td><b>Mutation testing</b></td><td>Uno strumento (PIT) che introduce piccoli errori nel codice e controlla che i test li scoprano. È la versione automatica del «sabotaggio mentale» di LIMET §5.1.</td><td>Cambia «&lt; 3» in «&lt;= 3»: un test deve fallire</td></tr>
+<tr><td><b>Copertura differenziale</b></td><td>Percentuale delle righe <i>nuove o modificate</i> dal task che sono eseguite da almeno un test.</td><td>«93% delle 120 righe nuove di T4»</td></tr>
+<tr><td><b>Invariante di progetto</b></td><td>Una regola che vale sempre, scritta dal team una volta in <code>docs-limet/invariants.md</code> e controllata a ogni task.</td><td>«Nessuna query senza paginazione», «nessun log con email»</td></tr>
+<tr><td><b>STALE</b></td><td>Stato di un task già verificato i cui file sono stati toccati da un task successivo: va ri-testato prima di tornare «verificato».</td><td>T4 verificato; T6 modifica <code>PrestitoService</code> → T4 STALE</td></tr>
+<tr><td><b>Campione a rischio</b></td><td>I pochi task che il team legge davvero, scelti con un punteggio (file centrali, aree sensibili, tentativi, decisioni autonome).</td><td>«Da leggere oggi: T4, T9, T5»</td></tr>
+<tr><td><b>Evidenza</b></td><td>Una prova riproducibile: identificativo del test, del run e del commit. Senza evidenza un requisito non è «conforme».</td><td><code>PrestitoServiceTest#quartoPrestito_rifiutato · r-0019 · 9b21e04</code></td></tr>
+<tr><td><b>CEREBRO / Qdrant / Ollama</b></td><td>Il sistema di ricerca semantica nei documenti del progetto previsto da LIMET (Appendice A): Ollama calcola gli «embedding», Qdrant li conserva, CEREBRO li interroga.</td><td>In <code>C:\software\cerebro</code></td></tr>
+<tr><td><b>Graphify</b></td><td>Lo strumento che costruisce la mappa delle relazioni nel codice (chi chiama chi) senza usare l'IA. Serve all'analista per stimare quali file toccherà un task.</td><td><code>graphify path PrestitoController PrestitoRepository</code></td></tr>
+<tr><td><b>Token</b></td><td>L'unità di misura con cui si paga l'IA: circa ¾ di parola. Input = ciò che legge, output = ciò che scrive, cache = ciò che rilegge a prezzo ridotto.</td><td>Un task developer ≈ 60k input + 400k cache + 12k output ≈ 0,35 USD con Sonnet 5.5</td></tr>
+</table>
+</section>
+
+  </main>
+</div>
+
+<script>
+(function () {
+  const pages = Array.from(document.querySelectorAll('section.page'));
+  const side = document.getElementById('side');
+  const main = document.getElementById('main');
+  const navb = document.createElement('div'); navb.className = 'navb';
+  const prev = document.createElement('button'); prev.textContent = '← Precedente';
+  const next = document.createElement('button'); next.textContent = 'Avanti →'; next.className = 'primary';
+  navb.append(prev, next); main.appendChild(navb);
+  let cur = 0;
+  pages.forEach((p, i) => {
+    const b = document.createElement('button');
+    b.innerHTML = '<span class="n">' + p.dataset.id + '</span>' + p.dataset.title;
+    b.addEventListener('click', () => show(i, true));
+    side.appendChild(b);
+  });
+  function show(i, push) {
+    cur = Math.max(0, Math.min(pages.length - 1, i));
+    pages.forEach((p, k) => p.classList.toggle('on', k === cur));
+    Array.from(side.children).forEach((b, k) => b.classList.toggle('on', k === cur));
+    prev.disabled = cur === 0; next.disabled = cur === pages.length - 1;
+    if (push) { location.hash = pages[cur].dataset.id; }
+    window.scrollTo({ top: 0 });
+    try { localStorage.setItem('limet-o1-page', pages[cur].dataset.id); } catch (e) {}
+  }
+  prev.addEventListener('click', () => show(cur - 1, true));
+  next.addEventListener('click', () => show(cur + 1, true));
+  document.addEventListener('keydown', e => {
+    if (e.target.tagName === 'INPUT') return;
+    if (e.key === 'ArrowRight') show(cur + 1, true);
+    if (e.key === 'ArrowLeft') show(cur - 1, true);
+  });
+  function fromHash() {
+    const h = location.hash.replace('#', '');
+    const i = pages.findIndex(p => p.dataset.id === h);
+    if (i >= 0) return i;
+    try { const s = localStorage.getItem('limet-o1-page'); const j = pages.findIndex(p => p.dataset.id === s); if (j >= 0) return j; } catch (e) {}
+    return 0;
+  }
+  window.addEventListener('hashchange', () => show(fromHash(), false));
+  show(fromHash(), false);
+})();
+</script>
+</body>
+</html>
