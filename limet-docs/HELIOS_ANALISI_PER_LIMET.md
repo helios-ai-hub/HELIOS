@@ -5,6 +5,15 @@
 > Etichette: **[F]** fatto verificato · **[I]** ipotesi · **[P]** proposta · **[N]** non verificato. Le fonti sono indicate per file e sezione; si rimanda a `..\01`–`..\06` senza ripeterli.
 > Stato decisioni: tutte le criticità C01–C28 sono **decise dal SUPERVISORE (2026-10-28)** in `..\05_roadmap_e_rischi.md` §2–3 e sono **vincolanti**; le questioni Q1–Q9 (§8) sono chiuse.
 > Documenti vincolanti non modificabili: `FEASIBILITY_O1_CLAUDE_CODE.html` (FO1), `ANALISI_limet-agents_con_workflow_claude.md` (ALA).
+>
+> **Aggiornato il 2026-10-29 (riallineamento a fine sessione, su richiesta del SUPERVISORE):** lo stato di
+> esecuzione reale è in **§10** (nuova sezione in coda). Sintesi: documenti LIMET master prodotti e
+> approvati (`limet/changes/0001-helios-roadmap-completa/`); **H-101 scritto, in attesa di approvazione**;
+> tutti gli altri task **non iniziati**; **nessun test eseguito**; **gate go/no-go del PoC non
+> raggiunto**; nessun codice. Le annotazioni «Aggiornato il 2026-10-29» nel corpo segnalano i punti
+> toccati; il testo originale non è stato cancellato. Le decisioni nuove hanno ID **D29–D37** e **Q10–Q11**
+> (§10.4); le proposte che toccano un requisito **non** sono applicate qui ma registrate in
+> `limet/changes/0001-helios-roadmap-completa/QUESTIONS.md` (§10.7).
 
 ---
 
@@ -241,7 +250,7 @@ Totale **[I]** 69–107 persona-giorni.
 Convenzione: percorsi relativi alla radice del nuovo repo HELIOS **[P]**. Ogni task ha test collegati (§6) e criterio di done. **Ogni task, oltre al suo criterio di done, richiede a fine sviluppo la valutazione dei rischi di §2.3 n. 7 (C28): senza di essa il task non è concluso.** Le fasi 4–5 non iniziano senza esito positivo della precedente.
 
 ### Fase 1
-- **H-101** ADR fondativo: owner, perimetro ECC, pin `25278e7`, revoca. File: `docs/adr/0001-helios.md`. Done: approvato dal SUPERVISORE.
+- **H-101** ADR fondativo: owner, perimetro ECC, pin `25278e7`, revoca. File: `docs/adr/0001-helios.md`. Done: approvato dal SUPERVISORE. *Aggiornato il 2026-10-29: ADR scritto (stato `PROPOSTO`), criteri di revoca a–d accettati dal SUPERVISORE (D33); approvazione dell'ADR e decisione sul rischio R-1.1 in attesa → task **parziale**.*
 - **H-102** Costituzione HELIOS con i non-negoziabili §2.3. File: `docs/CONSTITUTION.md`. Done: approvata; richiamata da ogni ruolo; include la regola di valutazione rischi a fine task (§2.3 n. 7, C28), valida per chi sviluppa HELIOS con LIMET puro.
 - **H-103** Conferma runtime (Q4) e struttura dei test. File: `docs/adr/0002-runtime.md`. Done: decisione scritta.
 
@@ -439,7 +448,7 @@ Matrice windows-latest / ubuntu-latest / macos-latest con suite identica (percor
 - Q2 ~~Tetto di costo~~ **DECISO (SUPERVISORE, 2026-10-28): opzione A con tetto rigido di 100 USD per workflow**, con interruzione automatica e stato «fermati e chiedi» alla soglia (riferimento FO1 §6: 20–45 USD).
 - Q3 ~~Titolare eccezione di scope / owner ADR~~ **DECISO (SUPERVISORE, 2026-10-28): opzione A, il SUPERVISORE è owner unico.**
 - Q4 ~~Runtime del core~~ **DECISO (SUPERVISORE, 2026-10-28): opzione A, Python ≥ 3.11 per core, runner e API; UI in TypeScript/React.** H-103 diventa la sola formalizzazione in ADR.
-- Q5 ~~Nome e posizione del nuovo repository~~ **DECISO (SUPERVISORE, 2026-10-28): opzione A con nome solo «HELIOS»:** cartella locale `C:\Progetti\VSC\HELIOS`, repository privato `HELIOS` nell'account GitHub `odyssey2073` (nessun suffisso `_APP`). La cartella di studio `C:\Progetti\VSC\LIMET\HELIOS` resta separata. Import e commit/push a cura dell'utente.
+- Q5 ~~Nome e posizione del nuovo repository~~ **DECISO (SUPERVISORE, 2026-10-28): opzione A con nome solo «HELIOS»:** cartella locale `C:\Progetti\VSC\HELIOS`, repository privato `HELIOS` nell'account GitHub `odyssey2073` (nessun suffisso `_APP`). La cartella di studio `C:\Progetti\VSC\LIMET\HELIOS` resta separata. Import e commit/push a cura dell'utente. *Aggiornato il 2026-10-29 (D29): il repository reale è `C:\Progetti\HELIOS`, remote `https://github.com/helios-ai-hub/HELIOS.git`; il SUPERVISORE ha confermato che vale il repository reale (annotato in `docs/adr/0001-helios.md` §5).*
 - Q6 **DECISO (SUPERVISORE): opzione A.** Modalità grafica «leggera» (C26-C) non inclusa ora; da riconsiderare se la dashboard risulta pesante nel PoC o nei budget di prestazioni.
 - Q7 **DECISO (SUPERVISORE, 2026-10-28): opzione A, monorepo.** HELIOS contiene tutto al proprio interno (plugin `limet-agents` in `agents/plugin/`, skill/agenti ECC portati, infrastruttura LIMET e CEREBRO); nessun repo separato `C:\Software\limet-agents`. Il plugin è installabile dalla cartella `agents/plugin/` tramite `claude plugin marketplace add`.
 - Q8 **DECISO (SUPERVISORE, 2026-10-28): opzione A.** JavaScript solo per scheduler e workflow (richiesti dal plugin, ALA R4/R23, test `node --test`); Python per runner, API, contratti, inventario e test. Il confine è il contratto JSON (§3.3). H-103 lo registra in `docs/adr/0002-runtime.md`.
@@ -482,3 +491,98 @@ In caso di conflitto tra questo file e un documento vincolante (ALA, FO1) o le d
 2. LIMET deriva `PLAN.md` (da `PLAN_TEMPLATE.md`), poi `TASK_LIST.md` (§5), `TEST_PLAN.md` (§6) ed `E2E_VERIFICATION.md` (§6, fase 9), senza chiedere conferma di generazione.
 3. Ogni task `H-xxx` si implementa comunicando prima cosa si fa, spiegandone il contenuto e, alla fine, elencando modifiche e file toccati.
 4. A fine fase, archiviare TEST_PLAN, E2E_VERIFICATION e TEST_EXECUTION in `limet/archive/<data-slug>/`.
+
+---
+
+## 10. Stato di esecuzione — aggiornato il 2026-10-29 (riallineamento a fine sessione)
+
+> Sezione aggiunta su richiesta del SUPERVISORE. Fonti confrontate: `limet/changes/0001-helios-roadmap-completa/`
+> (`PLAN.md`, `TASK_LIST.md`, `TEST_PLAN.md`, `E2E_VERIFICATION.md`, `TEST_EXECUTION.md`, `QUESTIONS.md`,
+> `TASK_H-407.md`), `docs/adr/0001-helios.md`, valutazioni C28 nel `TASK_LIST.md`. **Nessun codice prodotto,
+> nessun test eseguito, nessun commit.** Etichette [F]/[I]/[P]/[N] come nel resto del documento.
+
+### 10.1 Stato delle fasi (§4)
+
+| Fase | Stato | Evidenza |
+|---|---|---|
+| 1 Discovery | **parziale** — H-101 scritto (non approvato); H-102, H-103 non iniziati | `docs/adr/0001-helios.md`; `TASK_LIST.md` #1–#3 |
+| 2 Inventario ECC | non fatta | `TASK_LIST.md` #4–#7 `pending` |
+| 3 Contratti e consolidamento | non fatta | #8–#14 `pending` |
+| 4 PoC go/no-go | non fatta — **gate non raggiunto** | #15–#21 `pending`; `docs/poc-report.md` assente |
+| 5–7 Porting, catena, workflow | non fatte | #22–#51 `pending` |
+| 8 Hook e comandi | non fatta | #52–#57 `pending` |
+| 8b Dashboard | non fatta | #58–#65 `pending` |
+| 9 E2E | non fatta | #66–#67 `pending` |
+| 10 Hardening · 11 Documentazione · 12 Rilascio | non fatte | #68–#70 `pending` |
+| (0) Pianificazione LIMET | **fatta** | piano master approvato dal SUPERVISORE il 2026-10-29; 70/70 task e 58/58 test mappati (verifica grep) |
+
+### 10.2 Stato dei task H-xxx (§5)
+
+- **Fatto**: nessuno (il task di pianificazione #0 non è un H-xxx).
+- **Parziale**: **H-101** (ADR scritto 2026-10-29; stato `PROPOSTO`; D-101 4/5; in attesa di approvazione e della decisione su R-1.1).
+- **Non fatto** (69): H-102, H-103, H-201–H-204, H-301–H-307, H-401–H-407, H-308, H-408, H-409, H-501–H-503, H-601–H-612, H-701–H-712, H-800, H-800b, H-801–H-804, H-8b01–H-8b08, H-901, H-902, H-1001, H-1101, H-1201.
+- Fase di appartenenza, dipendenze, file e test di ciascuno: `TASK_LIST.md` (colonne Fase/Dipende/Dettaglio/Test).
+
+### 10.3 Esito dei test T-xxx (§6)
+
+**Tutti i 58 test: `non eseguito`** (nessun file di test esiste; esecuzione sempre a carico del SUPERVISORE).
+I comandi di riesecuzione (classe e metodo) restano quelli della tabella §6, riportati e arricchiti di casi
+aggiuntivi in `TEST_PLAN.md`; esito registrato in `TEST_EXECUTION.md` (tutte le righe `non eseguito`).
+Scenari e2e: E2E-PoC-01/02/03 e V1–V25 definiti in `E2E_VERIFICATION.md`, **nessuno eseguito**.
+Verifiche documentali: D-0 **OK** (70/70, 58/58); D-101 **parziale** (manca la riga di approvazione); le altre non applicabili.
+
+### 10.4 Decisioni nuove o modificate (ID progressivi dopo C28 e Q9)
+
+| ID | Decisione | Data | Chi | Dove |
+|---|---|---|---|---|
+| D29 | Repository di lavoro = `C:\Progetti\HELIOS`, remote `helios-ai-hub/HELIOS` (precisazione di Q5) | 2026-10-29 | SUPERVISORE | ADR 0001 §5; `PLAN.md` §4 n. 1 |
+| D30 | C28 trattata come vincolante anche se il prompt citava C01–C27 (è «DECISO: A» in `05` §3) | 2026-10-29 | SUPERVISORE (approvazione del piano con assunzione dichiarata) | `PLAN.md` §4 n. 2 |
+| D31 | Asset ECC del PoC (H-405) = `java-reviewer` → `ecc-java-reviewer` (riserva `security-reviewer`); scelta delegata all'agente | 2026-10-29 | SUPERVISORE (delega) | `PLAN.md` §4 n. 6 |
+| D32 | `limet-docs/PROMPT.txt`: «ignora» — nessuna bonifica; escluso dalla scansione T-302 (rischio accettato) | 2026-10-29 | SUPERVISORE | `PLAN.md` §4 n. 11 |
+| D33 | Criteri di revoca dell'eccezione C01: (a) legale KO senza clean-room, (b) no-go PoC senza piano B, (c) upgrade senza decisione/non regressione, (d) revoca esplicita; durata fino al pin `25278e7` | 2026-10-29 | SUPERVISORE (proposta dell'agente accettata) | ADR 0001 §2 n. 6–7 |
+| D34 | ADR, costituzione, `poc-report.md`, matrici in `docs/` (non `docs-limet/`); copia per l'indicizzazione valutata a H-1101 | 2026-10-29 | SUPERVISORE | `PLAN.md` §4 n. 4 |
+| D35 | L'utente di questa sessione è il SUPERVISORE a prescindere dalla macchina; i fatti ambientali si ri-verificano localmente quando servono | 2026-10-29 | SUPERVISORE | `PLAN.md` §4 n. 8 |
+| D36 | Le domande contestuali aperte si gestiscono **un task alla volta**, all'apertura del task che ne dipende | 2026-10-29 | SUPERVISORE | `PLAN.md` §4 (nota) |
+| D37 | Organizzazione LIMET: piano master unico + change figlie per fase; ruoli PoC direttamente in `agents/plugin/agents/` (non `agents/roles/`) | 2026-10-29 | approvazione del piano | `PLAN.md` §2, §4 n. 10 |
+| Q10 | Il progetto pilota «biblioteca» **esiste**; dettagli (percorso, JDK, change LIMET, `GUIDA_ECC_BIBLIOTECA.md`) forniti quando serviranno (prima di H-405/H-407/E2E) | 2026-10-29 | SUPERVISORE | `PLAN.md` §4 n. 9 |
+| Q11 | Modalità di autenticazione, soglie R13, `.claude/` in git, stack non Java, parametri notturni, `commit-commands`: **aperte**, da decidere all'apertura dei task H-708/H-711/H-302/H-409/H-709/H-1201 | — | — | `PLAN.md` §4 n. 14–19 |
+
+### 10.5 Scostamenti dal progetto originale (con motivo)
+
+| Scostamento | Motivo | Stato |
+|---|---|---|
+| Nessun codice, nessun test: la sessione ha prodotto solo documenti LIMET + ADR 0001 | vincolo del prompt iniziale («in questa fase non creare codice») e ciclo LIMET (approvazione prima dell'implementazione) | coerente con il metodo |
+| Cartella della change rinominata da `0001-helios-poc-go-no-go` a `0001-helios-roadmap-completa` | il SUPERVISORE ha chiesto che il piano copra l'intero progetto, con il PoC come gate | applicato |
+| Criteri go/no-go 9 e 10 (`05` §5) valutati «N/A in Fase 4, riverifica a fine Fasi 3 e 8b» | dipendono da deliverable di fasi successive alla 4 | **proposta, non applicata** (tocca un requisito di accettazione) → `QUESTIONS.md` Q-A1 |
+| H-308/H-408/H-409 eseguiti nel gruppo A dopo il PoC pur con numerazione 3xx/4xx; H-402 in `agents/plugin/agents/` | tabella «Gruppo» di §5 e forma di consegna §3.6 | applicato (D37) |
+| M.1–M.9 (H-712): raccomandazione di anticipare M.1–M.2 in Fase 3 e il resto dopo il plugin | regole runner/gate utili prima della Fase 7 | **proposta** → `QUESTIONS.md` Q-A2 |
+| Riferimento §9: «lettura obbligatoria … dichiarare in chat di averlo fatto»: FO1 letto per estrazione mirata delle sezioni §0, §1.2–1.3, §2.2–2.6, §3.1, §6, §7, §G (file HTML 132 KB) | dimensione del file | dichiarato in chat e in `PLAN.md` §3 |
+| RAG CEREBRO non usato (su questa macchina `query_qdrant.py` fallisce per `dotenv` mancante) | ambiente locale | degradazione controllata (manuale §7); tutto il contesto dai file locali |
+
+### 10.6 Rischi emersi (valutazioni C28) e trattamento
+
+| ID | Rischio | Trattamento | Stato |
+|---|---|---|---|
+| R-0.1 | percorso repo/remote incoerente tra fonti | opzioni (a)/(b) proposte → D29 | chiuso |
+| R-0.2 | credenziali in `PROMPT.txt` | opzioni (a)/(b) proposte → D32 «ignora» | chiuso (rischio accettato) |
+| R-0.3 | criteri 9–10 non raggiungibili in Fase 4 | opzioni (a)/(b) → `QUESTIONS.md` Q-A1 | **aperto** |
+| R-0.4 | sandbox del PoC non disponibile | → Q10 (biblioteca esiste) | chiuso |
+| R-0.5 | numerazione task incoerente tra fasi | opzioni (a)/(b) → D37 (a) | chiuso |
+| R-0.6 | dipendenza H-712 dal plugin non quantificata | opzioni (a)/(b) → `QUESTIONS.md` Q-A2 | **aperto** |
+| R-1.1 | C01-A prevede «ALA/FO1 emendati», il prompt vieta di modificarli | opzioni (a) dichiarazione nell'ADR / (b) copia interna annotata; raccomandata (a) | **aperto** (decisione attesa all'approvazione di H-101) |
+| R-1.2 | revoca (c) per upgrade accidentale | coperto da T-202 | chiuso |
+
+### 10.7 Esito del gate go/no-go del PoC
+
+**Non raggiunto.** Il PoC (Fase 4) non è iniziato: nessun criterio 1–10 di `05` §5 è valutabile; `docs/poc-report.md`
+non esiste. Piano B (`04` §5 Opzione 3) documentato in `PLAN.md` §5.5 e `TASK_H-407.md`, non attivato.
+
+### 10.8 Elementi aperti o rinviati
+
+1. Approvazione dell'ADR 0001 e decisione su R-1.1 (chiude H-101).
+2. H-102, H-103 (Fase 1), poi Fasi 2–3 in parallelo; H-301 (import storia) è azione del SUPERVISORE e richiede la decisione sulla collisione di `limet/` (`PLAN.md` §4 n. 3).
+3. `QUESTIONS.md`: Q-A1 (criteri 9–10), Q-A2 (anticipo M.1–M.2) — decisioni del SUPERVISORE.
+4. Domande `PLAN.md` §4 n. 7, 12–19 (alias modelli, isolamento rete, toolchain, autenticazione, soglie R13, `.claude/` in git, stack non Java, notte, `commit-commands`): da porre all'apertura dei task che ne dipendono (D36).
+5. Dettagli del pilota biblioteca (Q10): prima di H-405/H-407/E2E.
+6. Re-index CEREBRO/Graphify dopo questi aggiornamenti: a cura del SUPERVISORE.
+7. SPA `HELIOS_STUDIO.html` (citata in `00_README.md` §7): **non presente in `limet-docs/`**, quindi non rigenerata; se esiste nella cartella di studio originale va aggiornata lì dal SUPERVISORE.

@@ -1,6 +1,7 @@
 # 00 — HELIOS: studio di fattibilità («un ECC con agenti, guidato da LIMET»)
 
 > Data: 2026-10-28 · lingua: italiano · sola lettura delle fonti; nessun file esistente modificato.
+> **Aggiornato il 2026-10-29:** lo stato di esecuzione reale di HELIOS (fasi, task, test, decisioni D29–D37/Q10–Q11, rischi C28, gate PoC) è in `HELIOS_ANALISI_PER_LIMET.md` §10. Sintesi: pianificazione LIMET completata e approvata; H-101 scritto in attesa di approvazione; nessun codice, nessun test eseguito, gate PoC non raggiunto. La SPA `HELIOS_STUDIO.html` non è in questa cartella e non è stata rigenerata.
 
 ## 1. Sintesi esecutiva
 HELIOS porta in `limet-agents` ciò che di ECC (`affaan-m/ECC`, v2.2.3, commit `25278e7`, MIT) è riutilizzabile, sostituendo il suo flusso PRD→plan→TDD con i workflow LIMET, con Claude Code che esegue tutti gli agenti. **Richiesta del SUPERVISORE:** LIMET e CEREBRO confluiscono in HELIOS come moduli di un unico progetto, così ogni loro modifica si gestisce in un solo repository (`04` §6, criticità C19–C22), con un'unica dashboard web React per gestire tutti e tre (`04` §8, C23–C27).

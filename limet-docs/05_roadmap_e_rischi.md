@@ -299,3 +299,5 @@ Qualsiasi criterio fallito = no-go sull'asset/lane interessato; piano B = wrappe
 ## 7. Prerequisiti PoC e decisioni aperte
 
 Prerequisiti: ADR C01; Claude Code ≥ 2.1 **[F]** (2.1.311 verificato, da ricontrollare nel PoC); Qdrant/Ollama attivi **[F]** (verificati); `CRB_limet` assente **[F]**: HELIOS non crea collection esistenti (decisione del SUPERVISORE). Questioni aperte: nessuna; Q1–Q9 e C01–C28 sono tutte decise (v. `HELIOS_ANALISI_PER_LIMET.md` §8).
+
+*Aggiornato il 2026-10-29:* ADR C01 **scritto** (`docs/adr/0001-helios.md`, stato `PROPOSTO`, in attesa di approvazione); Claude Code **2.1.312** sulla macchina di sviluppo [F]; PoC **non iniziato**, gate go/no-go **non raggiunto**; nuove decisioni D29–D37 e Q10–Q11 in `HELIOS_ANALISI_PER_LIMET.md` §10.4; proposta di valutare i criteri 9–10 di §5 come «N/A in Fase 4» registrata in `limet/changes/0001-helios-roadmap-completa/QUESTIONS.md` (Q-A1), **non applicata** in attesa del SUPERVISORE.
