@@ -33,6 +33,9 @@
    - **Esito atteso**: `limet-change` è riconosciuto nella posizione prevista (`workflows/`) e compare come invocabile. Un file presente ma non riconosciuto = **KO**.
 3. Spostare/rinominare la cartella sorgente del plugin e riaprire una sessione.
    - **Esito atteso**: annotare se Claude Code usa una cache propria (verifica richiesta da H-407); runner, policy, `cerebro/`, `limet/` restano necessari fuori dal plugin.
+4. **(solo dopo il GO, quando esiste `docs/USER_GUIDE.md` — H-505)** Ripetere i passi 1 e 2 seguendo **alla lettera** la guida d'uso, senza conoscenza pregressa e senza comandi presi altrove.
+   - **Esito atteso**: ogni comando copiato dalla guida viene **eseguito davvero** e termina senza errori; nessun passo risulta mancante, ambiguo o nell'ordine sbagliato. Un comando della guida che non funziona o un passo che richiede di indovinare = **KO** su H-505 (non su H-407).
+   - **Nota**: è la verifica prevista per H-505, che non ha un `T-xxx` proprio perché la correttezza di una guida si dimostra solo eseguendola.
 
 ### V14 — Invocazione reale di `limet-change` (obbligatorio, ALA V14)
 1. In sessione Claude Code invocare il workflow con la change sandbox valida.

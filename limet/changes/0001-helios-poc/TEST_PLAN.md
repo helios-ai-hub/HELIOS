@@ -29,6 +29,7 @@ Framework **[P]**: `pytest` dalla radice (`python -m pytest`), Python ≥ 3.11 (
 | T-405 | Il pavimento hard-deny non è rimovibile (neanche da UI/API) e la policy è auditata | `TestPolicyFloor` (`tests/test_policy_floor.py`) | negativo | H-404 |
 | T-406 | L'asset portato non peggiora le metriche vs baseline | `TestAbMetrics` (`tests/test_ab_metrics.py`) | soglia Q-6 (recall ≥ baseline, falsi allarmi ≤ baseline, ≥ +1 su 10 difetti D1–D10 approvati 2026-10-29) | H-405 |
 | T-407 | Manifest e struttura del plugin valide; registrazione e invocazione reale verificate **a mano** in Claude Code (E2E V13/V14) | `TestPluginManifest` (`tests/test_plugin_manifest.py`) | struttura | H-407 |
+| T-504 | Integrità della documentazione di architettura: ogni citazione `file:riga` punta a una riga esistente, ogni modulo compare nella mappa, i diagrammi Mermaid si analizzano | `TestArchitectureDocs` (`tests/test_architecture_docs.py`) | contratto + negativi + regressione | H-504 |
 
 ### Autorevisione della qualità (manuale §5.1) — esito **preliminare**
 
@@ -156,7 +157,7 @@ Da eseguire dalla radice `C:\Progetti\VSC\HELIOS-PLATFORM\HELIOS` (**[N]** i fil
 
 ## Estensione a tutte le fasi (verifica di completezza 2026-10-29)
 
-Le righe sotto coprono i **restanti** test di IN §6 (T-201…T-204, T-308, T-408, T-409, T-501…T-503, T-601…T-611, T-701…T-712, T-801…T-804, T-8b01…T-8b10) **più i test aggiunti dopo IN** (T-8b12, T-713, T-714, T-715, T-8b13). Con T-302…T-407 sopra — che includono **T-309**, anch'esso non presente in IN §6 — il totale è **65 test T-xxx**: i **58** derivati da IN §6 **[F]** (la riga «69» ipotizzata in precedenza era una stima sbagliata; il conteggio effettivo delle righe IN §6 è 58), più i **3** della configurazione locale (T-309, T-8b11, T-8b12) e i **4** della modalità non presidiata (T-713, T-714, T-715, T-8b13), aggiunti su richiesta del SUPERVISORE del 2026-10-30. Tutti **[N]**: file/classi/metodi proposti, non esistenti fino a implementazione (Q-11b). I test delle fasi 5–12 si eseguono solo dopo il GO del gate H-406. **Pre/post-test comune**: test in sola lettura su directory temporanee; verificare `git status --porcelain` invariato fuori da `tests/`. I test su Qdrant (T-803, T-804) non devono alterare `CRB_csi_cosmo`, `CRB_mudeopenbtcet`, `CRB_mudeopensrvet`, `project_docs` (conteggio punti prima/dopo con `query_qdrant.py ... count`).
+Le righe sotto coprono i **restanti** test di IN §6 (T-201…T-204, T-308, T-408, T-409, T-501…T-503, T-601…T-611, T-701…T-712, T-801…T-804, T-8b01…T-8b10) **più i test aggiunti dopo IN** (T-8b12, T-504, T-713, T-714, T-715, T-8b13). Con T-302…T-407 sopra — che includono **T-309**, anch'esso non presente in IN §6 — il totale è **66 test T-xxx**: i **58** derivati da IN §6 **[F]** (la riga «69» ipotizzata in precedenza era una stima sbagliata; il conteggio effettivo delle righe IN §6 è 58), più i **3** della configurazione locale (T-309, T-8b11, T-8b12), i **4** della modalità non presidiata (T-713, T-714, T-715, T-8b13) e **1** della documentazione viva (T-504), aggiunti su richiesta del SUPERVISORE del 2026-10-30. Tutti **[N]**: file/classi/metodi proposti, non esistenti fino a implementazione (Q-11b). I test delle fasi 5–12 si eseguono solo dopo il GO del gate H-406. **Pre/post-test comune**: test in sola lettura su directory temporanee; verificare `git status --porcelain` invariato fuori da `tests/`. I test su Qdrant (T-803, T-804) non devono alterare `CRB_csi_cosmo`, `CRB_mudeopenbtcet`, `CRB_mudeopensrvet`, `project_docs` (conteggio punti prima/dopo con `query_qdrant.py ... count`).
 
 | # | Task | Comando classe | Comando metodo |
 | - | ---- | -------------- | -------------- |
@@ -169,6 +170,7 @@ Le righe sotto coprono i **restanti** test di IN §6 (T-201…T-204, T-308, T-40
 | T-501 | H-501 | `python -m pytest tests/test_agnostic.py::TestAgnostic` | `python -m pytest tests/test_agnostic.py::TestAgnostic::test_asset_solo_prompt` |
 | T-502 | H-502 | `python -m pytest tests/test_rules_per_role.py::TestRulesPerRole` | `python -m pytest tests/test_rules_per_role.py::TestRulesPerRole::test_quattro_common_assenti` |
 | T-503 | H-503 | `python -m pytest tests/test_naming.py::TestNaming` | `python -m pytest tests/test_naming.py::TestNaming::test_nessun_file_di_piano_ecc` |
+| T-504 | H-504 | `python -m pytest tests/test_architecture_docs.py::TestArchitectureDocs` | `python -m pytest tests/test_architecture_docs.py::TestArchitectureDocs::test_citazioni_file_riga_esistono` |
 | T-601 | H-602 | `python -m pytest tests/test_role_analyst.py::TestAnalystRole` | `python -m pytest tests/test_role_analyst.py::TestAnalystRole::test_split_oltre_cap` |
 | T-602 | H-603 | `python -m pytest tests/test_role_developer.py::TestDeveloperRole` | `python -m pytest tests/test_role_developer.py::TestDeveloperRole::test_git_solo_pattern_ammessi` |
 | T-603 | H-604 | `python -m pytest tests/test_role_tester.py::TestTesterRole` | `python -m pytest tests/test_role_tester.py::TestTesterRole::test_input_senza_diff` |
@@ -217,11 +219,31 @@ Nota: i file di test di T-8b01…T-8b05, T-8b08 e T-8b11 sono sotto `tests/api/`
 
 ### Copertura task → test e task senza test (elenco esplicito)
 
-- Senza T-xxx per natura documentale: H-101, H-102, H-103, H-203, H-307, H-406, H-800, H-902, H-1101, H-1201.
+- Senza T-xxx per natura documentale: H-101, H-102, H-103, H-203, H-307, H-406, H-505, H-506, H-800, H-902, H-1101, H-1201.
 - **[N]** Senza T-xxx in IN §6 e con verifica da definire: **H-800b** (un test per hook replicato), **H-1001** (audit). Da proporre al SUPERVISORE quando H-800 e H-1001 partono.
 - Mappature: T-403 → H-402 e H-601; T-405 → H-404 e H-8b04; T-304 → H-304 e H-8b08; T-8b01…T-8b04 → H-8b01; T-8b11 e T-8b12 → H-8b09.
 - **Aggiunti dopo IN §6** (richiesta SUPERVISORE 2026-10-30, configurazione locale): **T-309** → H-309; **T-8b11** (gate API) e **T-8b12** (dialog UI) → H-8b09. Totale 58 + 3 = **61**.
 - **Aggiunti dopo IN §6** (richiesta SUPERVISORE 2026-10-30, modalità non presidiata, ADR 0003): **T-713** → H-713; **T-714** → H-714; **T-715** → H-715; **T-8b13** → H-8b10. Totale 61 + 4 = **65**.
+- **Aggiunti dopo IN §6** (richiesta SUPERVISORE 2026-10-30, documentazione viva): **T-504** → H-504. Totale 65 + 1 = **66**. H-505 e H-506 restano senza T-xxx per natura documentale, con verifica a criteri osservabili dichiarata nella `TASK_LIST.md`.
+
+### Dettaglio del test della documentazione viva (H-504)
+
+Test di **Fase 5**, eseguibile solo dopo il GO. Stessa profondità di T-309.
+
+#### T-504 — Integrità della documentazione di architettura (H-504)
+
+- **Pre-test**: copia dei documenti in directory temporanea; l'albero dei moduli atteso è costruito **dal test** scorrendo il filesystem, mai letto da `module-map.md` (altrimenti il valore atteso deriverebbe dall'oggetto sotto esame).
+- **Classe**: `python -m pytest tests/test_architecture_docs.py::TestArchitectureDocs`
+- **Metodi**:
+  - `...::test_citazioni_file_riga_esistono` — ogni citazione `percorso:riga` presente in `architecture.md` e `module-map.md` punta a un file esistente e a un numero di riga **compreso nel file**. È il controllo che intercetta il marciume più comune: il codice si sposta, la citazione resta.
+  - `...::test_citazione_oltre_fine_file_fallisce` — caso negativo costruito apposta: una citazione a una riga oltre la fine del file deve far **fallire** il controllo. Senza, il metodo precedente potrebbe passare sempre.
+  - `...::test_ogni_modulo_del_repo_compare_nella_mappa` — ogni directory di modulo trovata sul filesystem ha una voce in `module-map.md`.
+  - `...::test_modulo_nuovo_non_documentato_fallisce` — creato un modulo fittizio nella copia temporanea, il controllo deve segnalarlo. È l'asserzione che rende il test utile a ogni fase successiva, non solo alla prima.
+  - `...::test_voce_orfana_nella_mappa_fallisce` — una voce che punta a un modulo non più esistente viene segnalata. Copre la direzione opposta della precedente.
+  - `...::test_diagrammi_mermaid_analizzabili` — ogni blocco ` ```mermaid ` si analizza senza errori di sintassi; un blocco malformato fa fallire.
+  - `...::test_documenti_presenti_e_non_vuoti` — `architecture.md` e `module-map.md` esistono e hanno contenuto oltre all'intestazione del template. Contratto minimo: senza, tutti gli altri metodi passerebbero a vuoto su file inesistenti.
+- **Post-test**: nessuna scrittura fuori dalla directory temporanea; `git status --porcelain` invariato; nessun documento reale modificato dal test.
+- **Autorevisione (manuale §5.1)**: le alterazioni plausibili considerate — (1) spostare una funzione citata senza aggiornare la citazione → intercettata dal 1° metodo; (2) aggiungere un modulo senza documentarlo → 4°; (3) cancellare un modulo lasciando la voce → 5°; (4) rompere un diagramma → 6°; (5) svuotare il documento lasciando il titolo → 7°. Ogni metodo ha il proprio caso negativo, quindi nessuno può passare per vacuità.
 
 ### Dettaglio dei test della modalità non presidiata (ADR 0003)
 
