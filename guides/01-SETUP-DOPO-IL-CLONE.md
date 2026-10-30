@@ -185,6 +185,35 @@ Il database vettoriale è **locale alla tua macchina**: la collection `CRB_helio
 viaggia con il repository e va ricostruita. Sostituisci `<CEREBRO>` con il tuo percorso
 di installazione e `<HELIOS>` con la cartella del clone.
 
+> ⚠️ **Hai già un progetto `helios` registrato da un lavoro precedente?**
+> Allora **ripulisci prima**, altrimenti ti porti dietro i documenti vecchi:
+>
+> | Cosa | Perché |
+> |---|---|
+> | Il registro | `register_project.py add` **fonde** i percorsi, non li sostituisce: ti ritroveresti in `projects.json` sia la vecchia cartella sia la nuova |
+> | La collection | `ingest_docs.py` non cancella **mai** nulla di default: i chunk dei file vecchi resterebbero in `CRB_helios` e la RAG risponderebbe con documenti che non esistono più |
+>
+> ```powershell
+> cd <CEREBRO>
+>
+> # 1. guarda cosa hai, prima di toccare
+> .venv\Scripts\python scripts\register_project.py list
+> .venv\Scripts\python scripts\query_qdrant.py --project helios count
+>
+> # 2. cancella la collection vecchia (verifica DUE VOLTE il nome)
+> curl -X DELETE http://localhost:6333/collections/CRB_helios
+>
+> # 3. togli la voce dal registro (non cancella la collection: servono entrambi)
+> .venv\Scripts\python scripts\register_project.py remove helios
+> ```
+>
+> Poi prosegui qui sotto da zero. **In alternativa, senza cancellare**: usa `add` con
+> `--replace-docs` e poi `ingest_docs.py --project helios --prune-root "<vecchia cartella>"`.
+> Più chirurgico, ma se la cache locale non è intatta qualche chunk può sopravvivere.
+>
+> ⛔ Il `DELETE` è irreversibile e riguarda **solo** `CRB_helios`. Mai `CRB_cosmo`,
+> mai `project_docs`, mai le collection di mudeopen.
+
 ```powershell
 cd <CEREBRO>
 
@@ -196,10 +225,25 @@ cd <CEREBRO>
 Le tre cartelle `--docs` sono quelle giuste: l'analisi di input, i documenti di lavoro in
 corso e quelli archiviati.
 
-> ⚠️ **`register_project.py instructions` rigenera i blocchi dentro `AGENTS.md` e
-> `CLAUDE.md`**, che sono versionati. Non è vietato — serve se vuoi i blocchi aggiornati —
-> ma dopo averlo eseguito **ricontrolla `git status`** e non committare le righe con i tuoi
-> percorsi (passo 3).
+**`--root` non è facoltativo.** Il Launcher lo usa per decidere come fare il Re-index: se
+manca, ricade ogni volta sulla reindicizzazione completa invece di quella incrementale
+(vedi passo 5).
+
+> ⚠️ **`register_project.py instructions` riscrive `CLAUDE.md` e
+> `.github/copilot-instructions.md`**, che sono entrambi versionati. Non è vietato — serve se
+> vuoi i blocchi aggiornati — ma dopo averlo eseguito **ricontrolla `git status`** e non
+> committare le righe con i tuoi percorsi (passo 3).
+>
+> **Non usare `--graphify`.** Le istruzioni per il grafo HELIOS le ha già, nel blocco
+> `LIMET-CONTEXT` scritto da `limet.ps1` (`AGENTS.md`, righe 45-92). Il flag aggiungerebbe un
+> secondo blocco che dice le stesse cose — e non costruisce comunque nessun grafo: incolla
+> solo del testo (vedi passo 6).
+
+**Variante: dal Launcher invece che da terminale.** Il Launcher fa gli stessi comandi con un
+form: scegli **«Nuovo progetto»** (non «Re-index» — quello vale solo per progetti già
+registrati, e HELIOS nella tendina non c'è ancora). Attenzione: il flusso «Nuovo progetto»
+esegue **sempre** `instructions`, quindi vale l'avvertimento qui sopra, e la casella Graphify
+va lasciata **vuota**.
 
 ✅ Verifica che il progetto risulti registrato:
 
@@ -229,8 +273,19 @@ presidiata. Se restituisce 0 risultati, l'indicizzazione non è andata a buon fi
 > ⛔ **Non toccare le collection di altri progetti** (`CRB_cosmo`, `project_docs`, le
 > collection di mudeopen). HELIOS usa **solo** `CRB_helios`. Mai cancellare una collection.
 
-🔁 L'indicizzazione è ripetibile: dopo aver modificato documenti, rilanciala
-(Launcher → percorso progetto → Re-index → Incrementale).
+🔁 L'indicizzazione è ripetibile: dopo aver modificato documenti, rilanciala dal
+**Launcher → Percorso progetto → Re-index → Incrementale**. Da qui in poi il passo 4 non
+va più rifatto: è una registrazione una volta sola.
+
+Il Launcher, a quel punto, non lancia sempre lo stesso comando:
+
+| Condizione | Cosa esegue |
+|---|---|
+| nel registro c'è `root` **e** esiste `<HELIOS>\limet\scripts\limet-index.ps1` | `limet-index.ps1 update` → **incrementale** |
+| altrimenti | `ingest_docs.py --project helios` → reindicizzazione **completa** |
+
+Quello script arriva col **passo 2**, non col clone: se salti il passo 2 il Re-index funziona
+lo stesso, ma è ogni volta completo e quindi più lento.
 
 ---
 
@@ -276,7 +331,8 @@ in locale.
 | Eseguire `limet.ps1` senza `-Lang it` | Il default è `en`: riscriverebbe in inglese i blocchi di `AGENTS.md` e `CLAUDE.md`, che sono versionati |
 | Committare `AGENTS.md`/`CLAUDE.md` con i **tuoi** percorsi | È configurazione locale, non di progetto (passo 3) |
 | Toccare le collection Qdrant di COSMO o mudeopen | Vincolo del SUPERVISORE; usa solo `CRB_helios` |
-| Cancellare una collection Qdrant | Mai, per nessun motivo |
+| Cancellare una collection Qdrant che non sia una tua `CRB_helios` | L'unica cancellazione ammessa è la pulizia di una `CRB_helios` tua precedente, sulla tua macchina (passo 4) |
+| Spuntare la casella **Graphify** nel Launcher, o passare `--graphify` | HELIOS ha già quelle istruzioni dal blocco `LIMET-CONTEXT`: ne aggiungeresti un secondo, duplicato, in un file versionato |
 | Far eseguire build, test, commit, push o merge a un agente | `docs/CONSTITUTION.md`, non negoziabile n.1 |
 | Committare su `main` | Il merge su `main` lo fa solo il SUPERVISORE |
 | Versionare file che un tool rigenera | È la regola che rende sicuro il passo 2. Se un tool sa ricrearlo, sta in `.gitignore` |
