@@ -29,7 +29,7 @@ Verifica di avere tutto **prima** di iniziare. Ogni riga è un comando da esegui
 | CEREBRO installato | la cartella esiste sul tuo disco | es. `C:\software\cerebro` |
 | Qdrant attivo | `curl http://localhost:6333/healthz` | risposta OK |
 | Ollama attivo | `curl http://localhost:11434/api/tags` | elenco modelli |
-| LIMET (sorgente) | la cartella esiste sul tuo disco | es. `C:\Progetti\VSC\LIMET` |
+| LIMET **sorgente** | la cartella esiste sul tuo disco | es. `C:\Progetti\VSC\LIMET`. Serve al passo 2: è da qui che il framework viene installato dentro il clone |
 
 Se Qdrant o Ollama non rispondono:
 
@@ -69,6 +69,18 @@ Se `limet/changes/0001-helios-poc/` **manca**, hai clonato un branch vecchio: pa
 ---
 
 ## Passo 2 — ✅ Installa il framework LIMET in locale
+
+> **«Ma io LIMET ce l'ho già»** — serve lo stesso, e questa è la distinzione da capire:
+>
+> | | Cos'è | Dove sta |
+> |---|---|---|
+> | **LIMET sorgente** | l'installer e le edizioni `it`/`en` | `C:\Progetti\VSC\LIMET` — è il prerequisito del passo 0, e **ce l'hai già** |
+> | **LIMET nel progetto** | `FRAMEWORK_MANUAL.md`, `ONBOARDING_CHECKLIST.md`, `MASTER_INDEX.md`, `templates/`, `scripts/` dentro `HELIOS\limet\` | nel tuo clone — e **non c'è**, perché non è versionato |
+>
+> Il passo 2 fa il secondo: prende dal sorgente che già possiedi e installa nel clone.
+> È **per progetto**, esattamente come per ogni altro progetto che segue LIMET.
+> Appena clonato, `limet/` contiene solo `changes/` e `archive/`: senza questo passo
+> restano lì, e gli agenti AI cercherebbero un `limet/FRAMEWORK_MANUAL.md` inesistente.
 
 ```bash
 powershell -ExecutionPolicy Bypass -File "<LIMET>\scripts\limet.ps1" \
