@@ -1,0 +1,33 @@
+# HELIOS — regole di versionamento
+#
+# Nota: in HELIOS la cartella `limet/` e i file di istruzioni per gli agenti NON sono
+# strumentazione locale ma PRODOTTO (H-301 importa LIMET e CEREBRO nel monorepo, H-712
+# ne modifica la documentazione). Le negazioni qui sotto hanno precedenza sul blocco
+# auto-gestito `LIMET:EXCLUDE` che `limet.ps1` scrive in `.git/info/exclude`, e non
+# vengono mai sovrascritte dall'installer (che tocca solo quel blocco).
+!/limet/
+!/AGENTS.md
+!/CLAUDE.md
+
+# Configurazione locale per utente: mai versionata (H-309, C20).
+# L'esempio `config/helios.local.example.json` invece È versionato.
+/config/helios.local.json
+
+# Artefatti rigenerabili sulla macchina di chi clona.
+/graphify-out/
+/.graphifyignore
+
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+
+# Sistema / editor
+Thumbs.db
+.DS_Store
+*~
+*.swp
+
+# Office: file di lock creati all'apertura (es. ~$HELIOS_Distribuzione_task.xlsx)
+~$*
