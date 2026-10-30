@@ -157,7 +157,7 @@ Da eseguire dalla radice `C:\Progetti\VSC\HELIOS-PLATFORM\HELIOS` (**[N]** i fil
 
 ## Estensione a tutte le fasi (verifica di completezza 2026-10-29)
 
-Le righe sotto coprono i **restanti** test di IN §6 (T-201…T-204, T-308, T-408, T-409, T-501…T-503, T-601…T-611, T-701…T-712, T-801…T-804, T-8b01…T-8b10) **più i test aggiunti dopo IN** (T-8b12, T-504, T-713, T-714, T-715, T-8b13). Con T-302…T-407 sopra — che includono **T-309**, anch'esso non presente in IN §6 — il totale è **66 test T-xxx**: i **58** derivati da IN §6 **[F]** (la riga «69» ipotizzata in precedenza era una stima sbagliata; il conteggio effettivo delle righe IN §6 è 58), più i **3** della configurazione locale (T-309, T-8b11, T-8b12), i **4** della modalità non presidiata (T-713, T-714, T-715, T-8b13) e **1** della documentazione viva (T-504), aggiunti su richiesta del SUPERVISORE del 2026-10-30. Tutti **[N]**: file/classi/metodi proposti, non esistenti fino a implementazione (Q-11b). I test delle fasi 5–12 si eseguono solo dopo il GO del gate H-406. **Pre/post-test comune**: test in sola lettura su directory temporanee; verificare `git status --porcelain` invariato fuori da `tests/`. I test su Qdrant (T-803, T-804) non devono alterare `CRB_csi_cosmo`, `CRB_mudeopenbtcet`, `CRB_mudeopensrvet`, `project_docs` (conteggio punti prima/dopo con `query_qdrant.py ... count`).
+Le righe sotto coprono i **restanti** test di IN §6 (T-201…T-204, T-308, T-408, T-409, T-501…T-503, T-601…T-611, T-701…T-712, T-801…T-804, T-8b01…T-8b10) **più i test aggiunti dopo IN** (T-8b12, T-504, T-713, T-714, T-715, T-716, T-8b13). Con T-302…T-407 sopra — che includono **T-309**, anch'esso non presente in IN §6 — il totale è **67 test T-xxx**: i **58** derivati da IN §6 **[F]** (la riga «69» ipotizzata in precedenza era una stima sbagliata; il conteggio effettivo delle righe IN §6 è 58), più i **3** della configurazione locale (T-309, T-8b11, T-8b12), i **4** della modalità non presidiata (T-713, T-714, T-715, T-8b13), **1** della documentazione viva (T-504) e **1** del ciclo di rilavorazione della code review (T-716), aggiunti su richiesta del SUPERVISORE del 2026-10-30. Tutti **[N]**: file/classi/metodi proposti, non esistenti fino a implementazione (Q-11b). I test delle fasi 5–12 si eseguono solo dopo il GO del gate H-406. **Pre/post-test comune**: test in sola lettura su directory temporanee; verificare `git status --porcelain` invariato fuori da `tests/`. I test su Qdrant (T-803, T-804) non devono alterare `CRB_csi_cosmo`, `CRB_mudeopenbtcet`, `CRB_mudeopensrvet`, `project_docs` (conteggio punti prima/dopo con `query_qdrant.py ... count`).
 
 | # | Task | Comando classe | Comando metodo |
 | - | ---- | -------------- | -------------- |
@@ -197,6 +197,7 @@ Le righe sotto coprono i **restanti** test di IN §6 (T-201…T-204, T-308, T-40
 | T-713 | H-713 | `python -m pytest tests/test_unattended_mode.py::TestUnattendedMode` | `python -m pytest tests/test_unattended_mode.py::TestUnattendedMode::test_permessi_identici_a_modalita_presidiata` |
 | T-714 | H-714 | `python -m pytest tests/test_autonomous_decisions_log.py::TestAutonomousDecisionsLog` | `python -m pytest tests/test_autonomous_decisions_log.py::TestAutonomousDecisionsLog::test_ogni_decisione_ha_evidenza_e_reversibilita` |
 | T-715 | H-715 | `python -m pytest tests/test_unattended_roles.py::TestUnattendedRoles` | `python -m pytest tests/test_unattended_roles.py::TestUnattendedRoles::test_ruolo_ignoto_e_negato` |
+| T-716 | H-716 | `python -m pytest tests/test_review_rework.py::TestReviewRework` | `python -m pytest tests/test_review_rework.py::TestReviewRework::test_terzo_giro_va_in_waiting_supervisor` |
 | T-801 | H-801 | `python -m pytest tests/test_llm_registry.py::TestLlmRegistry` | `python -m pytest tests/test_llm_registry.py::TestLlmRegistry::test_chiamata_non_registrata_fallisce` |
 | T-802 | H-802 | `python -m pytest tests/test_agentshield_wrapper.py::TestAgentShieldWrapper` | `python -m pytest tests/test_agentshield_wrapper.py::TestAgentShieldWrapper::test_senza_opus_e_senza_rete` |
 | T-803 | H-803 | `python -m pytest tests/test_setup_hls_kb.py::TestSetupHlsKb` | `python -m pytest tests/test_setup_hls_kb.py::TestSetupHlsKb::test_non_tocca_collection_esistenti` |
@@ -225,6 +226,7 @@ Nota: i file di test di T-8b01…T-8b05, T-8b08 e T-8b11 sono sotto `tests/api/`
 - **Aggiunti dopo IN §6** (richiesta SUPERVISORE 2026-10-30, configurazione locale): **T-309** → H-309; **T-8b11** (gate API) e **T-8b12** (dialog UI) → H-8b09. Totale 58 + 3 = **61**.
 - **Aggiunti dopo IN §6** (richiesta SUPERVISORE 2026-10-30, modalità non presidiata, ADR 0003): **T-713** → H-713; **T-714** → H-714; **T-715** → H-715; **T-8b13** → H-8b10. Totale 61 + 4 = **65**.
 - **Aggiunti dopo IN §6** (richiesta SUPERVISORE 2026-10-30, documentazione viva): **T-504** → H-504. Totale 65 + 1 = **66**. H-505 e H-506 restano senza T-xxx per natura documentale, con verifica a criteri osservabili dichiarata nella `TASK_LIST.md`.
+- **Aggiunti dopo IN §6** (richiesta SUPERVISORE 2026-10-30, code review — Q-20): **T-716** → H-716. Totale 66 + 1 = **67**. La decisione Q-19 non ha aggiunto test: ha esteso T-308 e T-711 con 10 metodi complessivi.
 
 ### Dettaglio del test della documentazione viva (H-504)
 
@@ -244,6 +246,27 @@ Test di **Fase 5**, eseguibile solo dopo il GO. Stessa profondità di T-309.
   - `...::test_documenti_presenti_e_non_vuoti` — `architecture.md` e `module-map.md` esistono e hanno contenuto oltre all'intestazione del template. Contratto minimo: senza, tutti gli altri metodi passerebbero a vuoto su file inesistenti.
 - **Post-test**: nessuna scrittura fuori dalla directory temporanea; `git status --porcelain` invariato; nessun documento reale modificato dal test.
 - **Autorevisione (manuale §5.1)**: le alterazioni plausibili considerate — (1) spostare una funzione citata senza aggiornare la citazione → intercettata dal 1° metodo; (2) aggiungere un modulo senza documentarlo → 4°; (3) cancellare un modulo lasciando la voce → 5°; (4) rompere un diagramma → 6°; (5) svuotare il documento lasciando il titolo → 7°. Ogni metodo ha il proprio caso negativo, quindi nessuno può passare per vacuità.
+
+### Dettaglio della soglia di severità della code review (Q-19)
+
+Non aggiunge test nuovi: **estende** T-308 (contratto) e T-711 (gate). La decisione Q-19 separa la **scala** (schema `findings`, H-308) dalla **policy di blocco** (`agents/policy/`, letta da H-711), e i test devono coprire le due cose separatamente — altrimenti un gate corretto maschererebbe uno schema permissivo, o viceversa.
+
+#### T-308 — metodi aggiunti per lo schema `findings`
+
+- `...::TestChainContracts::test_findings_severity_fuori_enum_invalido` — `severity` diversa da `critical`/`high`/`medium`/`low` ⇒ artefatto **invalido**. È il metodo che impedisce al `reviewer` di inventarsi un livello più comodo (`info`, `nit`) per uscire dalla soglia.
+- `...::TestChainContracts::test_findings_senza_severity_invalido` — campo assente ⇒ invalido. Senza, un findings privo di severità scivolerebbe attraverso un gate che legge solo i valori presenti.
+- `...::TestChainContracts::test_findings_senza_file_o_riga_invalido` — `file` e `line` obbligatori: un findings non localizzabile non è verificabile e non è correggibile.
+
+#### T-711 — metodi aggiunti per la policy di blocco
+
+- `...::TestMergeGates::test_findings_critical_blocca_il_merge` — stato pre: un findings `critical` aperto; atteso: merge **rifiutato**, con motivo che nomina il findings.
+- `...::TestMergeGates::test_findings_high_blocca_il_merge` — idem per `high`. Metodo distinto e non parametrizzato insieme al precedente: se un giorno `high` venisse declassato, deve fallire **questo** test e dire esattamente cosa è cambiato.
+- `...::TestMergeGates::test_findings_medium_senza_deroga_blocca` — `medium` senza riga in `exceptions.json` ⇒ merge rifiutato.
+- `...::TestMergeGates::test_findings_medium_con_deroga_firmata_passa` — la stessa situazione con deroga **firmata** ⇒ merge consentito. Coppia simmetrica alla precedente: senza entrambe, non si distingue «blocca sempre» da «non blocca mai».
+- `...::TestMergeGates::test_deroga_non_firmata_non_vale` — caso negativo sulla deroga stessa: una voce in `exceptions.json` priva di firma non sblocca nulla. È il metodo che impedisce che `exceptions.json` diventi un interruttore generale.
+- `...::TestMergeGates::test_findings_low_non_blocca` — `low` non impedisce il merge ma compare nel conteggio per le metriche.
+- `...::TestMergeGates::test_soglia_letta_dalla_policy_non_costante` — modificata la policy nella copia temporanea (p.es. `high` non bloccante), il gate **cambia esito** senza che il codice venga toccato. Dimostra il requisito «soglia come dato di configurazione» di Q-19 (c); se fallisce, la soglia è stata scritta nel codice.
+- **Autorevisione (manuale §5.1)**: l'alterazione plausibile più insidiosa è «il gate verifica che il `reviewer` abbia girato ma ignora la severità» — cioè esattamente lo stato di partenza rilevato in Q-19. È intercettata dai primi due metodi, che falliscono con un gate indifferente al contenuto dei findings. La seconda è «la soglia è una costante nel codice»: la intercetta l'ultimo metodo.
 
 ### Dettaglio dei test della modalità non presidiata (ADR 0003)
 
@@ -295,6 +318,25 @@ T-309: stato pre/post esplicito e un metodo per asserzione.
   - `...::test_developer_puo_committare_sul_ramo_del_task` — attua Q-18: il commit sul ramo del task è ammesso in non presidiato.
   - `...::test_developer_non_puo_pushare_ne_mergiare` — il contraltare del precedente: `push` e `merge` restano negati (R19, R21).
 - **Post-test**: `git status --porcelain` invariato; nessun ramo creato fuori dalla directory temporanea.
+
+### Dettaglio del test del ciclo di rilavorazione (Q-20)
+
+#### T-716 — Ciclo di rilavorazione dei findings (H-716)
+
+- **Pre-test**: catena simulata con `reviewer` e `developer` finti, pilotabili dal test (quanti findings emettono e a che giro li chiudono); stato del task in directory temporanea. Il numero atteso di giri è un **dato del test**, non letto dal modulo sotto esame.
+- **Classe**: `python -m pytest tests/test_review_rework.py::TestReviewRework`
+- **Metodi**:
+  - `...::test_findings_bloccante_riapre_il_task_al_developer` — stato pre: findings `high` aperto; atteso: il task torna al `developer`, **non** si ferma. È l'asserzione che distingue Q-20 dallo stato precedente, in cui un findings bloccante lasciava il task fermo.
+  - `...::test_findings_chiuso_al_primo_giro_prosegue` — corretto il findings, la catena prosegue verso il merge senza giri ulteriori. Caso positivo simmetrico al precedente.
+  - `...::test_secondo_giro_consentito` — con findings ancora aperto dopo la prima correzione, il ciclo concede la **seconda**.
+  - `...::test_terzo_giro_va_in_waiting_supervisor` — esaurite le 2 correzioni, il task passa a `WAITING_SUPERVISOR` con i findings ancora aperti **allegati**. Verificato anche il contenuto: uno stato di parcheggio senza l'elenco di cosa resta aperto è inutile il mattino dopo.
+  - `...::test_contatore_giri_distinto_da_maxattempts` — un fallimento tecnico (timeout del runner) incrementa `maxAttempts` (R12) e **non** il contatore dei giri di revisione. Senza questo metodo i due contatori potrebbero essere lo stesso e nessun altro test se ne accorgerebbe.
+  - `...::test_reviewer_nuovo_findings_fuori_dal_diff_rifiutato` — al giro 2 il `reviewer` apre un findings su una porzione di file non toccata dalla correzione: viene **respinto**. È il vincolo di convergenza: senza, il ciclo si allarga a ogni giro e non termina mai.
+  - `...::test_reviewer_nuovo_findings_dentro_il_diff_accettato` — contraltare del precedente: sul diff della correzione un findings nuovo è legittimo. Senza questa coppia non si distingue «filtra correttamente» da «rifiuta tutto».
+  - `...::test_stesso_reviewer_nei_giri_successivi` — il ruolo che rivede al giro N è il medesimo del giro 1: deve verificare che *i suoi* findings siano chiusi.
+  - `...::test_ogni_giro_emette_un_evento` — `events.jsonl` contiene un evento per giro, con numero di giro e findings residui; il conteggio finale coincide con i giri effettivi.
+- **Post-test**: nessuna scrittura fuori dalla directory temporanea; `git status --porcelain` invariato.
+- **Autorevisione (manuale §5.1)**: alterazioni plausibili considerate — (1) il findings bloccante ferma il task invece di riaprirlo → 1° metodo; (2) il tetto dei giri è ignorato e il ciclo continua → 4°; (3) i due contatori vengono unificati → 5°; (4) il reviewer allarga il campo a ogni giro → 6°, con il 7° a impedire che il filtro diventi un rifiuto indiscriminato; (5) il parcheggio avviene ma senza allegare i findings → verificato nel 4°; (6) i giri non vengono tracciati → 9°. Ogni metodo ha il proprio caso contrario, quindi nessuno passa per vacuità.
 
 #### T-8b13 — Pannello di avvio non presidiato (H-8b10)
 

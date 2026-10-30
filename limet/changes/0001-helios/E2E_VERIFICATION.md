@@ -83,7 +83,7 @@
 | V6 | Conflitto di integrazione | Due task sullo stesso file | `MERGE_CONFLICT`, decisione registrata, build successiva PASS | H-605; T-604 |
 | V7 | Regressione: task B tocca file di A | Merge di B dopo A verificato | `VERIFIED → STALE → VERIFIED` | H-706; T-706 |
 | V9 | Supervisore: T4 si ferma per dato mancante | T4 con dato mancante | Nessuno stop globale; domanda con fonti e opzioni via `AskUserQuestion`; T4 riparte dal WIP; nessuna domanda duplicata | H-707; T-707 |
-| V10 | Mutation gate su test tautologico | Test tautologico nel task | Score sotto soglia al primo run, sopra al secondo; nessun merge fra i due | H-711; T-711 |
+| V10 | Mutation gate su test tautologico **+ soglia di severità (Q-19)** | Test tautologico nel task; findings `high`/`medium` con e senza deroga | Score sotto soglia al primo run, sopra al secondo; nessun merge fra i due; `high` blocca, `medium` solo con deroga firmata; la soglia cambia esito per sola configurazione | H-711; T-711 |
 | V11 | Notte simulata (10 task, budget esaurito all'ottavo) | Budget fissato per esaurirsi all'8° task | Stato `INCOMPLETO`; report notturno con «Da leggere oggi»; ripresa dal checkpoint | H-708, H-709; T-708, T-709 |
 | V12 | E2E Playwright su app locale (3 casi, 1 FAIL indotto) | App locale del pilota | Trace per il FAIL; trace/log e stato pre/post; classificazione corretta | H-610; T-609 |
 | V20 | Completezza eventi e conteggio agenti | Scenario noto: pianificare, avviare, completare, fallire, annullare agenti | Conteggi distinti (pianificati/istanziati/avviati/terminati) coincidenti con la ground truth | H-609; T-608 |
@@ -147,6 +147,10 @@ Copertura V1–V24: scenari dettagliati sopra V8, V13–V19 (8) + tabella V1–V
 1. Il tester produce (indotto) un test tautologico.
 2. `<INVOCA>`; leggere i punteggi mutation dei due run.
 - **Atteso**: score sotto soglia al primo run, sopra al secondo; nessun merge fra i due run.
+3. **(Q-19, soglia di severità)** Indurre il `reviewer` a emettere un findings `high` su un task che supera tutti gli altri gate; poi ripetere declassandolo a `medium` **senza** deroga, e infine con deroga **firmata** in `exceptions.json`.
+- **Atteso**: `high` ⇒ merge **rifiutato** con motivo che nomina il findings; `medium` senza deroga ⇒ rifiutato; `medium` con deroga firmata ⇒ consentito, e la deroga resta tracciata. Un merge che passa con un `high` aperto = **KO**: significa che il gate verifica che il `reviewer` abbia girato, non che sia soddisfatto.
+4. **(Q-19, soglia come configurazione)** Modificare la policy in `agents/policy/` rendendo `high` non bloccante e ripetere il passo 3 senza toccare il codice.
+- **Atteso**: l'esito **cambia** per sola configurazione. Se non cambia, la soglia è stata scritta nel codice e il requisito Q-19 (c) non è soddisfatto.
 
 ### V11 — Notte simulata: 10 task, budget esaurito all'ottavo (H-708, H-709; T-708, T-709)
 1. `limits.json` con budget che si esaurisce all'8° task. `<INVOCA>`.
@@ -291,6 +295,44 @@ Copertura V1–V24: scenari dettagliati sopra V8, V13–V19 (8) + tabella V1–V
 - Nessun run orfano in esecuzione; nessun processo residuo.
 - `main` invariato; nessun merge; nessun push.
 - I quattro run compaiono nel report con causa di chiusura distinta e checkpoint utilizzabile.
+
+### E2E-REV-1 — Ciclo di rilavorazione dei findings di code review (H-716, H-607, H-711; Q-20)
+
+**Scopo**: dimostrare che un findings bloccante **riapre** il task invece di fermarlo, che il ciclo **converge** entro il tetto dei giri e che, se non converge, il task viene parcheggiato in modo leggibile il mattino dopo.
+
+**Stato pre-verifica**
+- Fase 7 completata (H-701…H-715); policy di severità di Q-19 attiva in `agents/policy/`.
+- Repository di prova con un task implementabile su cui introdurre volutamente un difetto di severità `high` riconoscibile dal `reviewer`.
+- Contatore di R12 (`maxAttempts`) e contatore dei giri di revisione osservabili separatamente.
+
+**Passi**
+1. Far produrre al `developer` un'implementazione con un difetto `high`, e lasciare girare il `reviewer`.
+   - **Atteso**: findings `high` emesso con `file` e `line`; il task **torna al `developer`**, stato «in rilavorazione», **non** fermo e **non** passato al gate di merge.
+2. Lasciare che il `developer` corregga e che il `reviewer` riesamini.
+   - **Atteso**: findings chiuso; il task prosegue verso H-711; **1** giro registrato in `events.jsonl`.
+3. Ripetere la prova con un difetto che il `developer` non riesce a correggere al primo tentativo.
+   - **Atteso**: seconda correzione concessa; **2** giri registrati.
+4. Lasciare che il findings resti aperto anche dopo la seconda correzione.
+   - **Atteso**: il task passa a `WAITING_SUPERVISOR`; i findings ancora aperti sono **allegati** allo stato; nessun terzo giro.
+5. Leggere lo stato di parcheggio come lo leggerebbe il SUPERVISORE il mattino dopo.
+   - **Atteso**: dall'allegato si capisce *che cosa* resta aperto e *dove*, senza aprire i log. Un parcheggio illeggibile vale quanto un blocco.
+6. Durante un ciclo, far fallire il `runner` per timeout.
+   - **Atteso**: `maxAttempts` (R12) si incrementa; il contatore dei **giri di revisione** resta invariato. È il passo che dimostra che i due contatori non sono lo stesso.
+7. Al giro 2, far aprire al `reviewer` un findings su una porzione di file **non toccata** dalla correzione.
+   - **Atteso**: respinto. Senza questo comportamento il ciclo si allarga a ogni giro e non termina.
+8. Al giro 2, far aprire al `reviewer` un findings **dentro** il diff della correzione.
+   - **Atteso**: accettato. Insieme al passo 7 dimostra che il filtro discrimina invece di rifiutare tutto.
+9. Verificare l'identità del revisore ai giri successivi.
+   - **Atteso**: è il **medesimo** `reviewer` del giro 1.
+10. Eseguire l'intero scenario in **modalità non presidiata** (ADR 0003).
+    - **Atteso**: il ciclo gira (entrambi i ruoli in allow-list, Q-16); al superamento dei 2 giri il task si parcheggia e gli **indipendenti proseguono**; il parcheggio compare in `REPORT_NOTTURNO.md`.
+11. Verificare le metriche (H-609/H-610).
+    - **Atteso**: il numero di giri per task è esposto come metrica, non solo presente nei log: è il dato che permette di accorgersi se il `reviewer` inizia a declassare le severità per evitare i giri (guardia di Q-19).
+
+**Stato post-verifica**
+- Nessun merge su `main`; nessun push.
+- `git status --porcelain` spiegabile riga per riga.
+- Numero di eventi di revisione in `events.jsonl` pari ai giri effettivamente svolti, per ogni task dello scenario.
 
 ### E2E-PoC-1 — Nessuna scrittura fuori workspace / `~/.claude` (criterio 1)
 1. Eseguire un giro completo (V14).
