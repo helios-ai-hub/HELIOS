@@ -157,7 +157,7 @@ Da eseguire dalla radice `C:\Progetti\VSC\HELIOS-PLATFORM\HELIOS` (**[N]** i fil
 
 ## Estensione a tutte le fasi (verifica di completezza 2026-10-29)
 
-Le righe sotto coprono i **restanti** test di IN §6 (T-201…T-204, T-308, T-408, T-409, T-501…T-503, T-601…T-611, T-701…T-712, T-801…T-804, T-8b01…T-8b10) **più i test aggiunti dopo IN** (T-8b12, T-504, T-713, T-714, T-715, T-716, T-8b13). Con T-302…T-407 sopra — che includono **T-309**, anch'esso non presente in IN §6 — il totale è **67 test T-xxx**: i **58** derivati da IN §6 **[F]** (la riga «69» ipotizzata in precedenza era una stima sbagliata; il conteggio effettivo delle righe IN §6 è 58), più i **3** della configurazione locale (T-309, T-8b11, T-8b12), i **4** della modalità non presidiata (T-713, T-714, T-715, T-8b13), **1** della documentazione viva (T-504) e **1** del ciclo di rilavorazione della code review (T-716), aggiunti su richiesta del SUPERVISORE del 2026-10-30. Tutti **[N]**: file/classi/metodi proposti, non esistenti fino a implementazione (Q-11b). I test delle fasi 5–12 si eseguono solo dopo il GO del gate H-406. **Pre/post-test comune**: test in sola lettura su directory temporanee; verificare `git status --porcelain` invariato fuori da `tests/`. I test su Qdrant (T-803, T-804) non devono alterare `CRB_csi_cosmo`, `CRB_mudeopenbtcet`, `CRB_mudeopensrvet`, `project_docs` (conteggio punti prima/dopo con `query_qdrant.py ... count`).
+Le righe sotto coprono i **restanti** test di IN §6 (T-201…T-204, T-308, T-408, T-409, T-501…T-503, T-601…T-611, T-701…T-712, T-801…T-804, T-8b01…T-8b10) **più i test aggiunti dopo IN** (T-8b12, T-504, T-713, T-714, T-715, T-716, T-717, T-8b13, T-8b14). Con T-302…T-407 sopra — che includono **T-309**, anch'esso non presente in IN §6 — il totale è **69 test T-xxx**: i **58** derivati da IN §6 **[F]** (la riga «69» ipotizzata in precedenza era una stima sbagliata; il conteggio effettivo delle righe IN §6 è 58), più i **3** della configurazione locale (T-309, T-8b11, T-8b12), i **4** della modalità non presidiata (T-713, T-714, T-715, T-8b13), **1** della documentazione viva (T-504), **1** del ciclo di rilavorazione della code review (T-716) e **2** della revisione umana del diff (T-717, T-8b14), aggiunti su richiesta del SUPERVISORE del 2026-10-30. Tutti **[N]**: file/classi/metodi proposti, non esistenti fino a implementazione (Q-11b). I test delle fasi 5–12 si eseguono solo dopo il GO del gate H-406. **Pre/post-test comune**: test in sola lettura su directory temporanee; verificare `git status --porcelain` invariato fuori da `tests/`. I test su Qdrant (T-803, T-804) non devono alterare `CRB_csi_cosmo`, `CRB_mudeopenbtcet`, `CRB_mudeopensrvet`, `project_docs` (conteggio punti prima/dopo con `query_qdrant.py ... count`).
 
 | # | Task | Comando classe | Comando metodo |
 | - | ---- | -------------- | -------------- |
@@ -198,6 +198,8 @@ Le righe sotto coprono i **restanti** test di IN §6 (T-201…T-204, T-308, T-40
 | T-714 | H-714 | `python -m pytest tests/test_autonomous_decisions_log.py::TestAutonomousDecisionsLog` | `python -m pytest tests/test_autonomous_decisions_log.py::TestAutonomousDecisionsLog::test_ogni_decisione_ha_evidenza_e_reversibilita` |
 | T-715 | H-715 | `python -m pytest tests/test_unattended_roles.py::TestUnattendedRoles` | `python -m pytest tests/test_unattended_roles.py::TestUnattendedRoles::test_ruolo_ignoto_e_negato` |
 | T-716 | H-716 | `python -m pytest tests/test_review_rework.py::TestReviewRework` | `python -m pytest tests/test_review_rework.py::TestReviewRework::test_terzo_giro_va_in_waiting_supervisor` |
+| T-717 | H-717 | `python -m pytest tests/test_human_review_gate.py::TestHumanReviewGate` | `python -m pytest tests/test_human_review_gate.py::TestHumanReviewGate::test_approvazione_decade_se_lo_sha_cambia` |
+| T-8b14 | H-8b11b | `npm --prefix ui test -- human-review-panel.test.tsx` | `npm --prefix ui test -- human-review-panel.test.tsx -t "nessuna approvazione senza sessione umana"` |
 | T-801 | H-801 | `python -m pytest tests/test_llm_registry.py::TestLlmRegistry` | `python -m pytest tests/test_llm_registry.py::TestLlmRegistry::test_chiamata_non_registrata_fallisce` |
 | T-802 | H-802 | `python -m pytest tests/test_agentshield_wrapper.py::TestAgentShieldWrapper` | `python -m pytest tests/test_agentshield_wrapper.py::TestAgentShieldWrapper::test_senza_opus_e_senza_rete` |
 | T-803 | H-803 | `python -m pytest tests/test_setup_hls_kb.py::TestSetupHlsKb` | `python -m pytest tests/test_setup_hls_kb.py::TestSetupHlsKb::test_non_tocca_collection_esistenti` |
@@ -227,6 +229,7 @@ Nota: i file di test di T-8b01…T-8b05, T-8b08 e T-8b11 sono sotto `tests/api/`
 - **Aggiunti dopo IN §6** (richiesta SUPERVISORE 2026-10-30, modalità non presidiata, ADR 0003): **T-713** → H-713; **T-714** → H-714; **T-715** → H-715; **T-8b13** → H-8b10. Totale 61 + 4 = **65**.
 - **Aggiunti dopo IN §6** (richiesta SUPERVISORE 2026-10-30, documentazione viva): **T-504** → H-504. Totale 65 + 1 = **66**. H-505 e H-506 restano senza T-xxx per natura documentale, con verifica a criteri osservabili dichiarata nella `TASK_LIST.md`.
 - **Aggiunti dopo IN §6** (richiesta SUPERVISORE 2026-10-30, code review — Q-20): **T-716** → H-716. Totale 66 + 1 = **67**. La decisione Q-19 non ha aggiunto test: ha esteso T-308 e T-711 con 10 metodi complessivi.
+- **Aggiunti dopo IN §6** (richiesta SUPERVISORE 2026-10-30, code review — Q-21): **T-717** → H-717; **T-8b14** → H-8b11b. Totale 67 + 2 = **69**.
 
 ### Dettaglio del test della documentazione viva (H-504)
 
@@ -337,6 +340,41 @@ T-309: stato pre/post esplicito e un metodo per asserzione.
   - `...::test_ogni_giro_emette_un_evento` — `events.jsonl` contiene un evento per giro, con numero di giro e findings residui; il conteggio finale coincide con i giri effettivi.
 - **Post-test**: nessuna scrittura fuori dalla directory temporanea; `git status --porcelain` invariato.
 - **Autorevisione (manuale §5.1)**: alterazioni plausibili considerate — (1) il findings bloccante ferma il task invece di riaprirlo → 1° metodo; (2) il tetto dei giri è ignorato e il ciclo continua → 4°; (3) i due contatori vengono unificati → 5°; (4) il reviewer allarga il campo a ogni giro → 6°, con il 7° a impedire che il filtro diventi un rifiuto indiscriminato; (5) il parcheggio avviene ma senza allegare i findings → verificato nel 4°; (6) i giri non vengono tracciati → 9°. Ogni metodo ha il proprio caso contrario, quindi nessuno passa per vacuità.
+
+### Dettaglio dei test della revisione umana del diff (Q-21)
+
+#### T-717 — Gate di revisione umana obbligatoria (H-717)
+
+- **Pre-test**: lista dei percorsi sensibili come **dato del test**, non letta dal modulo sotto esame; repository temporaneo con due rami, uno che tocca un percorso sensibile e uno che non lo tocca; esito di H-612 pilotabile.
+- **Classe**: `python -m pytest tests/test_human_review_gate.py::TestHumanReviewGate`
+- **Metodi**:
+  - `...::test_percorso_sensibile_richiede_approvazione` — un diff su `agents/policy/` senza firma: merge **rifiutato**.
+  - `...::test_percorso_non_sensibile_non_la_richiede` — stesso scenario su un file ordinario: il merge prosegue. Senza questo caso il test precedente non distinguerebbe «applica la regola» da «blocca tutto».
+  - `...::test_rischio_alto_richiede_approvazione` — percorso non sensibile ma H-612 ha dato rischio **alto**: merge rifiutato. È la seconda condizione di attivazione, indipendente dalla prima.
+  - `...::test_rischio_basso_su_percorso_ordinario_non_la_richiede` — nessuna delle due condizioni: nessuna revisione richiesta.
+  - `...::test_approvazione_firmata_sblocca_il_merge` — con firma valida il merge procede.
+  - `...::test_approvazione_non_firmata_non_vale` — un'approvazione priva di firma valida è respinta: impedisce che il file delle approvazioni diventi un interruttore generale (stessa guardia di `exceptions.json` in Q-19).
+  - `...::test_approvazione_decade_se_lo_sha_cambia` — approvato lo SHA *A*, il ramo avanza a *B*: l'approvazione **non vale più**. È il metodo che impedisce di far approvare una versione innocua e modificarla dopo; senza, l'intero controllo sarebbe aggirabile in un passaggio.
+  - `...::test_nessun_timeout_approva` — trascorso un tempo arbitrariamente lungo senza revisione, lo stato resta bloccato: **non** esiste una scadenza che concede il merge.
+  - `...::test_assenza_di_revisione_non_ferma_gli_indipendenti` — il task sensibile resta in `WAITING_SUPERVISOR`, i dipendenti si fermano, gli **indipendenti proseguono** (R8, H-707).
+  - `...::test_conformita_del_reviewer_non_sostituisce_la_firma` — findings tutti chiusi e `reviewer` soddisfatto, ma nessuna firma umana: merge comunque rifiutato. È il metodo che distingue Q-21 da Q-19.
+  - `...::test_lista_percorsi_sensibili_letta_dalla_configurazione` — modificando la configurazione cambia l'insieme dei task che richiedono revisione, senza toccare il codice del gate.
+- **Post-test**: `main` invariato; nessun merge non autorizzato; `git status --porcelain` invariato fuori dalla directory temporanea.
+- **Autorevisione (manuale §5.1)**: alterazioni plausibili considerate — (1) il gate ignora i percorsi sensibili → 1°, con il 2° a escludere il blocco indiscriminato; (2) il gate considera solo i percorsi e non il rischio → 3°, con il 4° come contrario; (3) accetta un'approvazione non firmata → 6°; (4) **non** rivaluta lo SHA → 7°; (5) introduce una scadenza permissiva → 8°; (6) blocca l'intero run invece del solo merge → 9°; (7) confonde la conformità del reviewer con l'approvazione umana → 10°; (8) la lista è una costante nel codice → 11°. Ogni condizione ha il proprio caso contrario: nessun metodo passa per vacuità.
+
+#### T-8b14 — Pannello di revisione umana del diff (H-8b11b)
+
+- **Pre-test**: API simulata; un task in attesa di revisione con diff, findings e rischio noti **forniti dal test**, non ricavati dal componente.
+- **Classe**: `npm --prefix ui test -- human-review-panel.test.tsx`
+- **Metodi** (`-t "<nome>"`):
+  - `-t "mostra diff, findings e rischio nella stessa vista"` — le tre informazioni sono presenti insieme: se fossero su schermate diverse la revisione verrebbe saltata.
+  - `-t "la severità dei findings è visibile"` — ogni findings mostra la severità di Q-19, non solo il testo.
+  - `-t "nessuna approvazione senza sessione umana"` — senza sessione umana autenticata il comando di approvazione non è attivabile (C24, C23).
+  - `-t "l'approvazione include lo SHA"` — la firma prodotta riporta lo SHA mostrato, non l'ultimo SHA del ramo: altrimenti si approverebbe qualcosa di diverso da ciò che si è letto.
+  - `-t "avviso quando il ramo è avanzato"` — se il ramo è avanzato dopo l'apertura della vista, l'approvazione è bloccata con avviso esplicito.
+  - `-t "il pannello non amplia i permessi"` — nessun controllo che aggiunga permessi, rimuova un `deny` o aggiri il gate.
+- **Post-test**: nessuna chiamata di merge emessa dai test; nessuna scrittura fuori dall'ambiente di prova.
+- **Autorevisione (manuale §5.1)**: le alterazioni che renderebbero inutile il pannello sono tutte coperte — informazioni separate (1°), severità nascosta (2°), approvazione senza sessione (3°), firma su uno SHA diverso da quello letto (4° e 5°), pannello come seconda via per ampliare permessi (6°).
 
 #### T-8b13 — Pannello di avvio non presidiato (H-8b10)
 

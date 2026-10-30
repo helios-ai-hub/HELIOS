@@ -334,6 +334,46 @@ Copertura V1–V24: scenari dettagliati sopra V8, V13–V19 (8) + tabella V1–V
 - `git status --porcelain` spiegabile riga per riga.
 - Numero di eventi di revisione in `events.jsonl` pari ai giri effettivamente svolti, per ogni task dello scenario.
 
+### E2E-REV-2 — Revisione umana obbligatoria del diff (H-717, H-8b11b; Q-21)
+
+**Scopo**: dimostrare che i task sensibili e quelli a rischio alto **non si fondono** senza che un essere umano abbia letto il diff, e che l'approvazione vale solo per ciò che è stato letto davvero.
+
+**Stato pre-verifica**
+- Fase 7 e Fase 8b completate; lista dei percorsi sensibili configurata e nota.
+- Due task pronti: uno che tocca `agents/policy/`, uno che tocca un file ordinario con rischio basso.
+- Un terzo task su file ordinario ma con **rischio alto** assegnato da H-612.
+
+**Passi**
+1. Portare al gate il task su file ordinario a rischio basso.
+   - **Atteso**: merge consentito **senza** revisione umana. È il caso che dimostra che la regola non blocca tutto.
+2. Portare al gate il task che tocca `agents/policy/`.
+   - **Atteso**: merge **rifiutato**; task in `WAITING_SUPERVISOR`; motivo esplicito «percorso sensibile» con il percorso nominato.
+3. Portare al gate il task a rischio alto su percorso ordinario.
+   - **Atteso**: rifiutato per la **seconda** condizione, con motivo distinto dal passo 2. Se i due motivi fossero indistinguibili, non si capirebbe perché il task è fermo.
+4. Verificare che, con findings tutti chiusi e `reviewer` soddisfatto, il merge resti comunque rifiutato.
+   - **Atteso**: la conformità automatica **non** sostituisce la firma umana. È il passo che distingue Q-21 da Q-19.
+5. Aprire il pannello di revisione (H-8b11b) sul task del passo 2.
+   - **Atteso**: diff, findings con severità e rischio visibili **nella stessa vista**; nessun passaggio ad altri strumenti.
+6. Approvare da sessione umana e rieseguire il gate.
+   - **Atteso**: merge consentito; firma registrata con lo SHA revisionato.
+7. Ripetere il passo 2, approvare lo SHA *A*, poi far avanzare il ramo a *B* e riprovare il merge.
+   - **Atteso**: approvazione **decaduta**, merge rifiutato, revisione da rifare. Senza questo comportamento basterebbe far approvare una versione innocua e modificarla dopo.
+8. Verificare il comportamento del pannello quando il ramo è avanzato mentre la vista è aperta.
+   - **Atteso**: approvazione bloccata con avviso, non approvazione silenziosa di uno SHA diverso da quello letto.
+9. Tentare di approvare chiamando direttamente l'API, **senza** sessione umana.
+   - **Atteso**: rifiutato (C24, C23).
+10. Lasciare un task sensibile non revisionato e far proseguire il run.
+    - **Atteso**: i **dipendenti** si fermano, gli **indipendenti** proseguono; nessuna scadenza concede il merge.
+11. Eseguire lo scenario in **modalità non presidiata**.
+    - **Atteso**: i task sensibili e a rischio alto maturano, si parcheggiano e compaiono in `REPORT_NOTTURNO.md`; nessuno di essi viene fuso durante la notte.
+12. Attendere un tempo lungo con il task in attesa.
+    - **Atteso**: lo stato resta bloccato a tempo indefinito. Un timeout che approva renderebbe la revisione una formalità aggirabile aspettando.
+
+**Stato post-verifica**
+- `main` invariato per tutti i task non approvati; nessun push.
+- Ogni approvazione registrata riporta SHA, autore e momento.
+- `git status --porcelain` spiegabile riga per riga.
+
 ### E2E-PoC-1 — Nessuna scrittura fuori workspace / `~/.claude` (criterio 1)
 1. Eseguire un giro completo (V14).
 2. Rieseguire lo snapshot e confrontarlo con `pre_claude.csv`.
