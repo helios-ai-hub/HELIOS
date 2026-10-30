@@ -1,11 +1,25 @@
 # HELIOS — regole di versionamento
 #
-# Nota: in HELIOS la cartella `limet/` e i file di istruzioni per gli agenti NON sono
-# strumentazione locale ma PRODOTTO (H-301 importa LIMET e CEREBRO nel monorepo, H-712
-# ne modifica la documentazione). Le negazioni qui sotto hanno precedenza sul blocco
-# auto-gestito `LIMET:EXCLUDE` che `limet.ps1` scrive in `.git/info/exclude`, e non
-# vengono mai sovrascritte dall'installer (che tocca solo quel blocco).
+# Le negazioni (`!`) qui sotto hanno precedenza sul blocco auto-gestito `LIMET:EXCLUDE`
+# che `limet.ps1` scrive in `.git/info/exclude`, e non vengono mai sovrascritte
+# dall'installer (che tocca solo quel blocco).
+#
+# REGOLA DI PROPRIETÀ — si versiona ciò che scriviamo noi, non ciò che un tool rigenera.
+# Un file rigenerato da un tool, se versionato, viene mergiato da git riga per riga: un
+# `limet.ps1 update` su un altro clone riporterebbe il file alla versione standard e git
+# lo mergerebbe SENZA conflitto, cancellando in silenzio il contenuto di HELIOS (rischio
+# R-8, PLAN §8). Per questo di `limet/` si versionano solo le due cartelle che
+# l'installer non tocca mai: `changes/` e `archive/` (cfr. limet.ps1 righe 119, 149-151).
 !/limet/
+/limet/*
+!/limet/changes/
+!/limet/archive/
+
+# AGENTS.md e CLAUDE.md sono anch'essi scritti dai tool (limet.ps1 righe 341-396,
+# register_project.py `instructions`), ma restano versionati perché il loro diff è di
+# 2 righe (il percorso di CEREBRO) ed è quindi rivedibile a occhio, al contrario dei
+# file sopra. Chi ha CEREBRO in un percorso diverso adatta quelle righe in locale e
+# NON le committa, finché H-309 non toglie i percorsi assoluti dai file versionati.
 !/AGENTS.md
 !/CLAUDE.md
 

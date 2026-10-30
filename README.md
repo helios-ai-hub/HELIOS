@@ -36,7 +36,7 @@
 | `docs/` | Costituzione del progetto e decisioni architetturali (`adr/`) |
 | `docs-limet/` | Analisi di input e documentazione di progetto |
 | `guides/` | **Guide operative passo-passo** (setup dopo il clone, ecc.) |
-| `limet/` | Metodo LIMET: piani, task list, piano dei test, verifica E2E |
+| `limet/` | Documenti LIMET di progetto: piani, task list, piano dei test, verifica E2E (`changes/`, `archive/`). Il resto del framework non è versionato: lo installa il setup |
 | `log/` | Distribuzione dei task tra le risorse e guida ai branch |
 | `test/` | Materiale del progetto pilota |
 

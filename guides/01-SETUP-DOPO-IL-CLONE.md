@@ -4,11 +4,17 @@
 > Serve a chiunque prenda HELIOS per la prima volta su una macchina nuova.
 > Dall'inizio alla fine sono 6 passi. Non saltarne nessuno e non cambiarne l'ordine.
 
-**Il principio da tenere a mente:** il repository contiene **già** il metodo di lavoro
-(`limet/`) e le istruzioni per gli agenti (`AGENTS.md`, `CLAUDE.md`). Quello che **non**
-può contenere è la tua configurazione locale: percorsi, database vettoriale, modelli.
-Il setup consiste esattamente in questo — ricostruire la parte locale, senza toccare
-quella condivisa.
+**Il principio da tenere a mente:** il repository contiene **solo ciò che scriviamo noi** —
+i documenti di progettazione (`limet/changes/`), la documentazione (`docs/`, `docs-limet/`)
+e le istruzioni per gli agenti (`AGENTS.md`, `CLAUDE.md`). Tutto ciò che un tool è in grado
+di **rigenerare** non è versionato: lo ricostruisci tu in locale, ed è esattamente ciò che
+fanno i passi qui sotto.
+
+| Nel repository (arriva col clone) | Da ricostruire in locale (passi 2-5) |
+|---|---|
+| `limet/changes/`, `limet/archive/` | `limet/FRAMEWORK_MANUAL.md`, `MASTER_INDEX.md`, `ONBOARDING_CHECKLIST.md` |
+| `docs/`, `docs-limet/`, `guides/`, `log/` | `limet/templates/` (18 file), `limet/scripts/` (3 file) |
+| `AGENTS.md`, `CLAUDE.md`, `README.md` | la collection Qdrant `CRB_helios`, `graphify-out/` |
 
 ---
 
@@ -47,75 +53,104 @@ git branch -a
 
 ✅ Devi vedere i branch `main`, `dev`, `mk1`, `test`.
 
-✅ Devi vedere queste cartelle:
+✅ Devi vedere queste cartelle e questi file:
 
 ```
 .github/  docs/  docs-limet/  guides/  limet/  log/  test/
 AGENTS.md  CLAUDE.md  README.md  .gitignore
 ```
 
-Se `limet/`, `AGENTS.md` o `CLAUDE.md` **mancano**, hai clonato un branch vecchio:
-passa a `mk1` o `dev` e ricontrolla.
+✅ Dentro `limet/` trovi **solo** `changes/` e `archive/`. È corretto: il resto del
+framework (manuale, checklist, indice, `templates/`, `scripts/`) lo installi tu al passo 2.
+
+Se `limet/changes/0001-helios-poc/` **manca**, hai clonato un branch vecchio: passa a
+`mk1` o `dev` e ricontrolla.
 
 ---
 
-## Passo 2 — ⛔ NON eseguire l'installer di LIMET
+## Passo 2 — ✅ Installa il framework LIMET in locale
 
-> ⛔ **Non eseguire `limet.ps1 init` né `limet.ps1 update` su questo repository.**
+```powershell
+cd <HELIOS>
+powershell -ExecutionPolicy Bypass -File <LIMET>\scripts\limet.ps1 init
+```
 
-**Perché.** In HELIOS la cartella `limet/` non è strumentazione locale: è **prodotto**
-(il task H-301 importa LIMET e CEREBRO nel monorepo, H-712 ne modifica la documentazione).
-Arriva già completa con il clone.
+Sostituisci `<LIMET>` con la tua installazione (es. `C:\Progetti\VSC\LIMET`).
+Il comando crea i file che mancavano: `limet/FRAMEWORK_MANUAL.md`,
+`limet/ONBOARDING_CHECKLIST.md`, `limet/MASTER_INDEX.md`, `limet/templates/`,
+`limet/scripts/`, e aggiorna i blocchi marcati in `AGENTS.md` e `CLAUDE.md`.
 
-L'installer farebbe due danni:
-
-1. **Sovrascrive** `limet/FRAMEWORK_MANUAL.md`, `limet/ONBOARDING_CHECKLIST.md`,
-   `limet/MASTER_INDEX.md` e tutta `limet/templates/` con la versione upstream
-   (`Copy-Item -Force`). È il rischio **R-8** censito nel `PLAN_helios-poc.md` §8.
-2. **Riscrive** `AGENTS.md` e `CLAUDE.md` con i percorsi della **tua** macchina,
-   producendo modifiche che non vanno committate.
-
-I documenti di progettazione in `limet/changes/` **non** sarebbero toccati (l'installer
-non entra mai in quella cartella), ma il resto sì.
-
-**Se l'hai già eseguito per errore**, annulla le modifiche non volute:
+✅ **Verifica subito che il repository sia rimasto pulito:**
 
 ```bash
-git status --short          # guarda cosa è cambiato
-git restore limet/ AGENTS.md CLAUDE.md
+git status --short
 ```
+
+**Atteso: nessuna riga, oppure al massimo `AGENTS.md` e `CLAUDE.md` modificati.**
+
+**Perché funziona.** Quei file sono esclusi dal versionamento (vedi `.gitignore`): l'installer
+li riscrive liberamente e git non se ne accorge, perché non sono affari suoi. È una scelta
+deliberata — un file rigenerato da un tool, se fosse versionato, verrebbe mergiato da git
+riga per riga e un `update` su un altro clone cancellerebbe **in silenzio** il contenuto di
+HELIOS, senza produrre alcun conflitto (rischio **R-8**, `PLAN_helios-poc.md` §8).
+
+I documenti di progettazione in `limet/changes/` non vengono toccati in nessun caso:
+l'installer in quella cartella non entra mai.
+
+🔁 `limet.ps1 update` è altrettanto sicuro e si può rilanciare quando vuoi, per allinearti
+a una versione più recente di LIMET.
+
+⚠️ **Se `git status` mostra altri file modificati**, fermati e avvisa il SUPERVISORE: vuol
+dire che l'esclusione non ha funzionato come previsto.
 
 ---
 
-## Passo 3 — Adatta i percorsi locali (solo se i tuoi sono diversi)
+## Passo 3 — Cosa va adattato a mano
 
-`AGENTS.md` e `CLAUDE.md` contengono il percorso di CEREBRO della macchina su cui sono
-stati generati:
+Due file sono versionati **anche se i tool li riscrivono**: `AGENTS.md` e `CLAUDE.md`.
+Sono il punto d'ingresso per gli agenti AI, quindi devono esserci già al clone. Il prezzo è
+che contengono un percorso assoluto, e quel percorso è di chi li ha generati.
 
-```
-C:\software\cerebro\scripts\query_qdrant.py
-```
+**L'unica cosa da adattare, oggi, è questa:**
 
-Controlla il tuo:
+| File | Righe | Contenuto | Cosa fare |
+|---|---|---|---|
+| `AGENTS.md` | 52 e 75 | `python "C:\software\cerebro\scripts\query_qdrant.py" …` | Sostituisci il percorso con quello del **tuo** CEREBRO |
+| `CLAUDE.md` | 54 e 77 | la stessa riga (il file è una copia di `AGENTS.md` più l'import `@AGENTS.md`) | Idem |
+
+Sono 2 righe per file, la versione italiana e quella inglese dello stesso comando.
+Trovale così:
 
 ```bash
 grep -n "software.cerebro" AGENTS.md CLAUDE.md
 ```
 
-- **Il percorso coincide con il tuo** → non fare nulla, passa al passo 4.
-- **Il percorso è diverso** → modificalo nei due file con il tuo percorso reale.
+- **Il percorso coincide con il tuo** → non devi fare nulla. Passa al passo 4.
+- **Il percorso è diverso** → correggilo nei due file.
 
-> ⛔ **Non committare questa modifica.** È configurazione tua, non del progetto.
-> Prima di ogni commit controlla `git status` e, se vedi `AGENTS.md` o `CLAUDE.md`
-> modificati solo per i percorsi, escludili:
+> ⛔ **Non committare questa modifica.** È configurazione della tua macchina, non del
+> progetto: se la mandi nel repository la imponi a tutti gli altri.
+>
+> Prima di ogni commit controlla, e se vedi quei due file modificati **solo** per il
+> percorso, tienili fuori:
 >
 > ```bash
-> git restore --staged AGENTS.md CLAUDE.md
+> git status --short
+> git restore --staged AGENTS.md CLAUDE.md    # se li hai già aggiunti
 > ```
+>
+> Usa sempre `git add <file>` mirato. **Mai `git add -A` o `git add .`**: è il modo più
+> rapido per spedire la propria configurazione a tutti.
 
-**[N] Soluzione definitiva:** questo attrito sparisce con il task **H-309**, che introduce
-`config/helios.local.json` (file per utente, mai versionato) e un modulo di bootstrap che
-legge i percorsi da lì. Fino ad allora la correzione resta manuale.
+**Perché questi due file sì e gli altri no.** La differenza non è «chi li scrive» ma
+**quanto è rivedibile il diff**: qui sono 2 righe che saltano all'occhio in una pull request;
+in `FRAMEWORK_MANUAL.md` sarebbero oltre mille, impossibili da controllare. Per questo quelli
+non sono versionati affatto (passo 2) e questi sì.
+
+**[N] Soluzione definitiva:** l'attrito sparisce con il task **H-309**, che introduce
+`config/helios.local.json` (un file per utente, mai versionato) e un modulo di bootstrap che
+legge i percorsi da lì. Fino ad allora la correzione resta manuale, e va rifatta dopo ogni
+`limet.ps1` o `register_project.py instructions`.
 
 ---
 
@@ -136,9 +171,10 @@ cd <CEREBRO>
 Le tre cartelle `--docs` sono quelle giuste: l'analisi di input, i documenti di lavoro in
 corso e quelli archiviati.
 
-> ⛔ **Non eseguire `register_project.py instructions`.**
-> Quel comando rigenera il blocco di istruzioni dentro `AGENTS.md` e `CLAUDE.md`, che qui
-> sono **già versionati**: otterresti solo modifiche da scartare (stesso problema del passo 3).
+> ⚠️ **`register_project.py instructions` rigenera i blocchi dentro `AGENTS.md` e
+> `CLAUDE.md`**, che sono versionati. Non è vietato — serve se vuoi i blocchi aggiornati —
+> ma dopo averlo eseguito **ricontrolla `git status`** e non committare le righe con i tuoi
+> percorsi (passo 3).
 
 ✅ Verifica che il progetto risulti registrato:
 
@@ -211,21 +247,24 @@ in locale.
 
 | ⛔ | Perché |
 |---|---|
-| Eseguire `limet.ps1 init` / `update` su questo repo | Sovrascrive documentazione versionata (rischio **R-8**) |
-| Eseguire `register_project.py instructions` | Riscrive `AGENTS.md` e `CLAUDE.md` versionati |
+| Usare `git add -A` o `git add .` | Spedisce nel repository la tua configurazione locale. Aggiungi sempre file per file |
+| Committare `AGENTS.md`/`CLAUDE.md` con i **tuoi** percorsi | È configurazione locale, non di progetto (passo 3) |
 | Toccare le collection Qdrant di COSMO o mudeopen | Vincolo del SUPERVISORE; usa solo `CRB_helios` |
 | Cancellare una collection Qdrant | Mai, per nessun motivo |
 | Far eseguire build, test, commit, push o merge a un agente | `docs/CONSTITUTION.md`, non negoziabile n.1 |
 | Committare su `main` | Il merge su `main` lo fa solo il SUPERVISORE |
-| Committare `AGENTS.md`/`CLAUDE.md` con i tuoi percorsi | È configurazione locale, non di progetto |
+| Versionare file che un tool rigenera | È la regola che rende sicuro il passo 2. Se un tool sa ricrearlo, sta in `.gitignore` |
 | Committare file `~$*.xlsx` | Sono lock temporanei di Excel; già esclusi da `.gitignore` |
 
 ---
 
 ## Se qualcosa non torna
 
-1. `git status --short` — se mostra modifiche che non hai fatto tu, probabilmente hai
-   eseguito l'installer LIMET (passo 2).
-2. Ricerca CEREBRO a vuoto — rilancia `ingest_docs.py` e controlla che Qdrant e Ollama
+1. **`git status` mostra modifiche che non hai fatto tu** — se sono `AGENTS.md` e
+   `CLAUDE.md`, è normale dopo il passo 2: vedi il passo 3. Se sono **altri file**,
+   fermati e avvisa il SUPERVISORE.
+2. **Ricerca CEREBRO a vuoto** — rilancia `ingest_docs.py` e controlla che Qdrant e Ollama
    rispondano (passo 0).
-3. In ogni altro caso: **fermati e chiedi al SUPERVISORE.** Non improvvisare.
+3. **`limet/` sembra incompleta** — mancano manuale, checklist o `templates/`? Non è un
+   errore del clone: esegui il passo 2.
+4. In ogni altro caso: **fermati e chiedi al SUPERVISORE.** Non improvvisare.
