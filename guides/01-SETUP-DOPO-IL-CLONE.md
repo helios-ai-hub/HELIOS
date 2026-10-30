@@ -70,12 +70,20 @@ Se `limet/changes/0001-helios-poc/` **manca**, hai clonato un branch vecchio: pa
 
 ## Passo 2 — ✅ Installa il framework LIMET in locale
 
-```powershell
-cd <HELIOS>
-powershell -ExecutionPolicy Bypass -File <LIMET>\scripts\limet.ps1 init
+```bash
+powershell -ExecutionPolicy Bypass -File "<LIMET>\scripts\limet.ps1" \
+  init -ProjectPath "<HELIOS>" -Lang it
 ```
 
-Sostituisci `<LIMET>` con la tua installazione (es. `C:\Progetti\VSC\LIMET`).
+Sostituisci `<LIMET>` con la tua installazione (es. `C:\Progetti\VSC\LIMET`) e `<HELIOS>`
+con la cartella del clone. Scrivi i percorsi **con i backslash e fra virgolette**: da Git Bash
+la forma `/c/...` viene tradotta in modo imprevedibile quando la passa a PowerShell.
+
+> ⚠️ **`-Lang it` non è facoltativo.** Il valore predefinito è `en`: senza quel parametro
+> installi l'edizione inglese e riscrivi in inglese il blocco LIMET di `AGENTS.md` e
+> `CLAUDE.md`, che sono **versionati** — otterresti un diff da scartare. HELIOS usa
+> l'edizione **italiana**.
+
 Il comando crea i file che mancavano: `limet/FRAMEWORK_MANUAL.md`,
 `limet/ONBOARDING_CHECKLIST.md`, `limet/MASTER_INDEX.md`, `limet/templates/`,
 `limet/scripts/`, e aggiorna i blocchi marcati in `AGENTS.md` e `CLAUDE.md`.
@@ -98,7 +106,12 @@ I documenti di progettazione in `limet/changes/` non vengono toccati in nessun c
 l'installer in quella cartella non entra mai.
 
 🔁 `limet.ps1 update` è altrettanto sicuro e si può rilanciare quando vuoi, per allinearti
-a una versione più recente di LIMET.
+a una versione più recente di LIMET — **sempre con `-Lang it`**:
+
+```bash
+powershell -ExecutionPolicy Bypass -File "<LIMET>\scripts\limet.ps1" \
+  update -ProjectPath "<HELIOS>" -Lang it
+```
 
 ⚠️ **Se `git status` mostra altri file modificati**, fermati e avvisa il SUPERVISORE: vuol
 dire che l'esclusione non ha funzionato come previsto.
@@ -248,6 +261,7 @@ in locale.
 | ⛔ | Perché |
 |---|---|
 | Usare `git add -A` o `git add .` | Spedisce nel repository la tua configurazione locale. Aggiungi sempre file per file |
+| Eseguire `limet.ps1` senza `-Lang it` | Il default è `en`: riscriverebbe in inglese i blocchi di `AGENTS.md` e `CLAUDE.md`, che sono versionati |
 | Committare `AGENTS.md`/`CLAUDE.md` con i **tuoi** percorsi | È configurazione locale, non di progetto (passo 3) |
 | Toccare le collection Qdrant di COSMO o mudeopen | Vincolo del SUPERVISORE; usa solo `CRB_helios` |
 | Cancellare una collection Qdrant | Mai, per nessun motivo |
