@@ -49,4 +49,4 @@ Poi:
 - Sintesi non tecnica: `docs-limet/analisi-input/06_sintesi_non_tecnica.md`
 - Decisioni fondanti: `docs/CONSTITUTION.md` e `docs/adr/`
 - Piano e task in corso: `limet/changes/0001-helios/`
-- Come lavorare a branch e pull request: `log/HELIOS_GUIDA_BRANCH.md`
+- Come lavorare a branch e pull request: `log/HELIOS_GUIDA_BRANCH.md` 'ciao'
