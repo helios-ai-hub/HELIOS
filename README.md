@@ -35,12 +35,18 @@
 |---|---|
 | `docs/` | Costituzione del progetto e decisioni architetturali (`adr/`) |
 | `docs-limet/` | Analisi di input e documentazione di progetto |
+| `guides/` | **Guide operative passo-passo** (setup dopo il clone, ecc.) |
 | `limet/` | Metodo LIMET: piani, task list, piano dei test, verifica E2E |
-| `log/` | Distribuzione dei task tra le risorse |
+| `log/` | Distribuzione dei task tra le risorse e guida ai branch |
 | `test/` | Materiale del progetto pilota |
 
 ## Per iniziare
 
-- Decisioni fondanti: `docs/adr/` e `docs/CONSTITUTION.md`
-- Piano e task in corso: `limet/changes/`
+**Hai appena clonato il repository?** Parti da qui: [`guides/01-SETUP-DOPO-IL-CLONE.md`](guides/01-SETUP-DOPO-IL-CLONE.md).
+
+Poi:
+
 - Sintesi non tecnica: `docs-limet/analisi-input/06_sintesi_non_tecnica.md`
+- Decisioni fondanti: `docs/CONSTITUTION.md` e `docs/adr/`
+- Piano e task in corso: `limet/changes/0001-helios-poc/`
+- Come lavorare a branch e pull request: `log/HELIOS_GUIDA_BRANCH.md`
