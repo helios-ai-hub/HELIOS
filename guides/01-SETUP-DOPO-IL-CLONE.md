@@ -63,7 +63,7 @@ AGENTS.md  CLAUDE.md  README.md  .gitignore
 ✅ Dentro `limet/` trovi **solo** `changes/` e `archive/`. È corretto: il resto del
 framework (manuale, checklist, indice, `templates/`, `scripts/`) lo installi tu al passo 2.
 
-Se `limet/changes/0001-helios-poc/` **manca**, hai clonato un branch vecchio: passa a
+Se `limet/changes/0001-helios/` **manca**, hai clonato un branch vecchio: passa a
 `mk1` o `dev` e ricontrolla.
 
 ---
@@ -112,7 +112,7 @@ git status --short
 li riscrive liberamente e git non se ne accorge, perché non sono affari suoi. È una scelta
 deliberata — un file rigenerato da un tool, se fosse versionato, verrebbe mergiato da git
 riga per riga e un `update` su un altro clone cancellerebbe **in silenzio** il contenuto di
-HELIOS, senza produrre alcun conflitto (rischio **R-8**, `PLAN_helios-poc.md` §8).
+HELIOS, senza produrre alcun conflitto (rischio **R-8**, `PLAN_helios.md` §8).
 
 I documenti di progettazione in `limet/changes/` non vengono toccati in nessun caso:
 l'installer in quella cartella non entra mai.
@@ -267,7 +267,7 @@ cd <CEREBRO>
 .venv\Scripts\python scripts\query_qdrant.py --project helios search "modalita non presidiata" --limit 3
 ```
 
-La ricerca deve restituire passaggi del `PLAN_helios-poc.md` o dell'ADR sulla modalità non
+La ricerca deve restituire passaggi del `PLAN_helios.md` o dell'ADR sulla modalità non
 presidiata. Se restituisce 0 risultati, l'indicizzazione non è andata a buon fine: **fermati**.
 
 > ⛔ **Non toccare le collection di altri progetti** (`CRB_cosmo`, `project_docs`, le
@@ -314,10 +314,10 @@ in locale.
 | 2 | `docs-limet/analisi-input/06_sintesi_non_tecnica.md` | Il progetto senza gergo tecnico |
 | 3 | `docs/CONSTITUTION.md` | I 7 non negoziabili |
 | 4 | `docs/adr/` | Le decisioni architetturali (0001 fondativo, 0002 runtime, 0003 modalità non presidiata) |
-| 5 | `limet/changes/0001-helios-poc/PLAN_helios-poc.md` | Il piano: perimetro, decisioni C01–C28, domande Q |
-| 6 | `limet/changes/0001-helios-poc/TASK_LIST.md` | I 76 task, con dipendenze e criteri di completamento |
-| 7 | `limet/changes/0001-helios-poc/TEST_PLAN.md` | I 65 test e i comandi di riesecuzione |
-| 8 | `limet/changes/0001-helios-poc/E2E_VERIFICATION.md` | Gli scenari di verifica end-to-end |
+| 5 | `limet/changes/0001-helios/PLAN_helios.md` | Il piano: perimetro, decisioni C01–C28, domande Q |
+| 6 | `limet/changes/0001-helios/TASK_LIST.md` | I 76 task, con dipendenze e criteri di completamento |
+| 7 | `limet/changes/0001-helios/TEST_PLAN.md` | I 65 test e i comandi di riesecuzione |
+| 8 | `limet/changes/0001-helios/E2E_VERIFICATION.md` | Gli scenari di verifica end-to-end |
 | 9 | `log/HELIOS_GUIDA_BRANCH.md` | **Come lavorare**: pacchetti, branch, pull request |
 | 10 | `log/HELIOS_Distribuzione_task.xlsx` | Chi fa cosa (assegnazione ancora **[P]**, da approvare) |
 

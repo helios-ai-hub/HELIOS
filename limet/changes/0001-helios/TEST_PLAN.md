@@ -4,7 +4,7 @@
 
 ## Riferimenti
 
-- **Piano**: `PLAN_helios-poc.md` · **Task**: `TASK_LIST.md` · **E2E**: `E2E_VERIFICATION.md`
+- **Piano**: `PLAN_helios.md` · **Task**: `TASK_LIST.md` · **E2E**: `E2E_VERIFICATION.md`
 
 ## Ambito della verifica
 

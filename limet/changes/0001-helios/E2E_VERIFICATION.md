@@ -5,7 +5,7 @@
 
 ## Riferimenti
 
-- **Piano/task collegato**: `PLAN_helios-poc.md`, `TASK_LIST.md` (H-401…H-407), `TEST_PLAN.md`
+- **Piano/task collegato**: `PLAN_helios.md`, `TASK_LIST.md` (H-401…H-407), `TEST_PLAN.md`
 - **Ambiente di verifica**: locale, sandbox separata dal repo HELIOS **[N]** (percorso da decidere); Claude Code 2.1.311; Windows (+ CI per Unix)
 
 ## Precondizioni
